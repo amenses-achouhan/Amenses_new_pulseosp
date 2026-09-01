@@ -40,7 +40,10 @@ require(path.join(SERVER_DIR, 'node_modules', 'dotenv')).config({
 
 // Fail-closed middleware reads this at request time — a fixture value for the
 // test harness (the repo .env intentionally leaves it blank).
-process.env.SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET || 'e2e-slack-signing-secret';
+if (!process.env.SLACK_SIGNING_SECRET) {
+  console.error('[slack-e2e] SLACK_SIGNING_SECRET is required. Add it to server/.env');
+  process.exit(1);
+}
 
 const crypto = require('crypto');
 const jwt = require(path.join(SERVER_DIR, 'node_modules', 'jsonwebtoken'));

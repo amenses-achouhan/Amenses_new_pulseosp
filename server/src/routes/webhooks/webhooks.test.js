@@ -31,7 +31,9 @@ const MockIntegration = {
   findOne(query) {
     this.lastQuery = query;
     return Promise.resolve(
-      this.state.organizationId ? { organizationId: this.state.organizationId } : null
+      this.state.organizationId
+        ? { organizationId: this.state.organizationId, metadata: { webhookSecret: 'test-jira-webhook-secret' } }
+        : null
     );
   },
 };
@@ -67,6 +69,9 @@ function ghSignature(secret, rawBody) {
 function slackSignature(secret, timestamp, rawBody) {
   const base = `v0:${timestamp}:${rawBody}`;
   return `v0=${crypto.createHmac('sha256', secret).update(base).digest('hex')}`;
+}
+function jiraSignature(secret, rawBody) {
+  return 'sha256=' + crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
 }
 
 async function runTests() {
@@ -185,15 +190,17 @@ async function slackTests({ post, slackMsgRaw, slackUrlRaw }) {
 }
 
 async function jiraTests({ post, jiraRaw, jiraFixtures }) {
+  const jiraSecret = 'test-jira-webhook-secret';
+
   // T2-06 — valid Jira payload with orgId in body -> stored.
   MockIntegration.state.organizationId = '507f1f77bcf86cd799439011';
   MockActivity.created.length = 0;
   const withOrg = Buffer.from(JSON.stringify({ ...jiraFixtures.issueCreated, organizationId: '507f1f77bcf86cd799439011' }), 'utf8');
-  let res = await post('/jira', withOrg);
+  let res = await post('/jira', withOrg, { 'x-hub-signature': jiraSignature(jiraSecret, withOrg) });
   check('T2-06/POST /jira returns 200 + stores', res.status === 200 && MockActivity.created.length === 1 && MockActivity.created[0].source === 'jira', `${res.status} / ${JSON.stringify(MockActivity.created[0])}`);
 
   // Missing orgId -> 400.
-  res = await post('/jira', jiraRaw);
+  res = await post('/jira', jiraRaw, { 'x-hub-signature': jiraSignature(jiraSecret, jiraRaw) });
   check('Jira missing organizationId -> 400', res.status === 400, String(res.status));
 }
 

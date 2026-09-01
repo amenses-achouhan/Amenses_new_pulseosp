@@ -8,8 +8,8 @@
  *   POST /api/notifications/read-all → mark all notifications read
  *
  * Auth: authenticate + verifyTenantAccess (same pattern as all other routes).
- * The requesting user's ID is resolved from req.user._id (set by authenticate).
- * The organization is resolved from req.organization._id (set by verifyTenantAccess).
+ * The requesting user's ID is resolved from req.user.userId (set by authenticate).
+ * The organization is resolved from req.organizationId (set by verifyTenantAccess).
  */
 
 const express = require('express');
@@ -34,8 +34,8 @@ router.use(authenticate, verifyTenantAccess);
 // ---------------------------------------------------------------------------
 router.get('/', async (req, res) => {
   try {
-    const userId = req.user._id;
-    const orgId  = req.organization._id;
+    const userId = req.user.userId;
+    const orgId  = req.organizationId;
     const limit  = Math.min(parseInt(req.query.limit, 10) || 20, 50);
 
     const [notifications, unreadCount] = await Promise.all([
@@ -57,8 +57,8 @@ router.get('/', async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/read-all', async (req, res) => {
   try {
-    const userId = req.user._id;
-    const orgId  = req.organization._id;
+    const userId = req.user.userId;
+    const orgId  = req.organizationId;
     await markAllRead(userId, orgId);
     res.json({ ok: true });
   } catch (err) {
@@ -77,7 +77,7 @@ router.post('/:id/read', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: 'Invalid notification ID' });
     }
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const updated = await markRead(id, userId);
     if (!updated) {
       return res.status(404).json({ error: 'Notification not found or not owned by user' });

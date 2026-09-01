@@ -21,10 +21,12 @@ const router = express.Router();
 function verifyJiraWebhook(req, integration) {
   const webhookSecret = integration?.metadata?.webhookSecret;
 
-  // No integration or no secret configured: allow but log (legacy webhooks)
+  // No integration or no secret configured: reject (fail-closed).
+  // Unauthenticated webhooks must never be trusted — any external actor
+  // could forge payloads and inject fake issues/comments/worklog data.
   if (!webhookSecret) {
     console.warn('[jira/webhook] No webhook secret configured for integration:', integration?._id || 'unknown');
-    return true; // Allow for backward compatibility
+    return false;
   }
 
   const signatureHeader = req.headers['x-hub-signature'] || req.headers['x-hub-signature-256'];
@@ -168,12 +170,10 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Jira webhook error:', error);
-    // Return 200 to prevent Jira from retrying indefinitely on our errors
-    // but log the error for investigation
-    res.status(200).json({
-      error: 'Failed to process webhook',
-      message: error.message
-    });
+    // Return 200 to prevent Jira from retrying indefinitely on our errors.
+    // Do NOT leak error.message — it may contain internal details (Mongo errors,
+    // Mongoose validation messages, stack traces). The error is logged server-side.
+    res.status(200).json({ received: true });
   }
 });
 

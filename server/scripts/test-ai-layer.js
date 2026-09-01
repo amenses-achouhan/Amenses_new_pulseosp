@@ -12,7 +12,7 @@
  *   node scripts/test-ai-layer.js --dry-run               # provision + inject only
  *
  * Env expected at server/.env:
- *   GITHUB_WEBHOOK_SECRET   (fallback: pulseops-github-webhook-hmac-secret-2026)
+ *   GITHUB_WEBHOOK_SECRET   (REQUIRED for GitHub webhook signing)
  *   SLACK_SIGNING_SECRET    (REQUIRED for Slack injection)
  *   GEMINI_API_KEY
  */
@@ -69,13 +69,13 @@ async function json(url, opts = {}) {
 }
 
 // ---- signing ---------------------------------------------------------------
-const GH_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'pulseops-github-webhook-hmac-secret-2026';
+const GH_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 const signGithub = (raw) => {
   const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
   return crypto.createHmac('sha256', GH_SECRET).update(buf).digest('hex');
 };
 
-const SLACK_SECRET = process.env.SLACK_SIGNING_SECRET || 'missing';
+const SLACK_SECRET = process.env.SLACK_SIGNING_SECRET;
 const signSlack = (ts, raw) => {
   const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
   const base = `v0:${ts}:`;

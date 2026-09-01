@@ -5,7 +5,7 @@
 require('dotenv').config();
 const crypto = require('crypto');
 
-const GH_SECRET = process.env.GITHUB_WEBHOOK_SECRET || 'pulseops-github-webhook-hmac-secret-2026';
+const GH_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
 const payload = {
   action: 'opened', number: 42,
   pull_request: {

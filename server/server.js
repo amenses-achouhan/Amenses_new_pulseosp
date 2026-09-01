@@ -34,8 +34,6 @@ app.use(securityHeaders);
 //    also allowed (client dev server + production-build smoke-test ports).
 const FRONTEND_URL =
   process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000';
-const LOCAL_DEV_ORIGINS = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3100'];
-
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
@@ -78,8 +76,6 @@ app.use(
 
 app.use('/api/auth', authRoutes);
 app.use('/api/organizations', orgRoutes);
-// Mount orgRoutes at /api also so /api/workspaces/:id/invitations resolves correctly.
-app.use('/api', orgRoutes);
 app.use('/api/integrations', integrationRoutes);
 
 // Repositories module — lists imported GitHub repositories for a workspace.

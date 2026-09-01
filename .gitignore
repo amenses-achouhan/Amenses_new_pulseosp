@@ -2,10 +2,15 @@ node_modules
 .next
 out
 coverage
+
+# Environment files
 .env
-.env.local
+.env.*
+client/.env
+client/.env.*
 server/.env
-client/.env.local
+server/.env.*
+
 .DS_Store
 npm-debug.log*
 
@@ -13,3 +18,4 @@ server/uploads/
 debug.log
 nul
 server.log
+server/dev.log

@@ -100,11 +100,6 @@ export const authOptions = {
         GitHubProvider({
           clientId: process.env.GITHUB_AUTH_CLIENT_ID,
           clientSecret: process.env.GITHUB_AUTH_CLIENT_SECRET,
-          authorization: {
-            params: {
-              redirect_uri: "http://localhost:3000/api/auth/callback/github"
-            }
-          }
         }),
       ]
       : []),

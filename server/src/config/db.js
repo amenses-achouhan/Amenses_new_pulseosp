@@ -55,7 +55,11 @@ async function toDirectUri(mongoURI) {
 }
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/pulseops_v2';
+  const mongoURI = process.env.MONGO_URI;
+  if (!mongoURI) {
+    console.error('[db] MONGO_URI is not set. Add it to server/.env');
+    process.exit(1);
+  }
   try {
     console.log(`Connecting to MongoDB at: ${redactMongoUri(mongoURI)}`);
 

@@ -24,6 +24,7 @@ const PERMISSIONS = [
   'view_developers',
   'manage_projects',
   'view_projects',
+  'manage_repositories',
   'view_repositories',
   'view_communication',
   'generate_reports',
@@ -44,9 +45,9 @@ const ROLE_PERMISSIONS = {
     'view_team',
     'manage_integrations',
     'view_integrations',
-    'view_developers',
-    'manage_projects',
+    'view_developers',    'manage_projects',
     'view_projects',
+    'manage_repositories',
     'view_repositories',
     'view_communication',
     'generate_reports',
@@ -58,6 +59,7 @@ const ROLE_PERMISSIONS = {
     'view_tickets',
   ],
 
+
   // Full workspace administration (operational power, no destructive/ownership actions).
   admin: [
     'manage_members',
@@ -68,6 +70,7 @@ const ROLE_PERMISSIONS = {
     'view_developers',
     'manage_projects',
     'view_projects',
+    'manage_repositories',
     'view_repositories',
     'view_communication',
     'generate_reports',
@@ -89,6 +92,7 @@ const ROLE_PERMISSIONS = {
     'view_developers',
     'manage_projects',
     'view_projects',
+    'manage_repositories',
     'view_repositories',
     'view_communication',
     'generate_reports',

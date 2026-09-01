@@ -45,7 +45,6 @@ router.get(
       },
       { upsert: true, new: true }
     );
-    console.log("SAVED STATE:", state);
     const authUrl = new URL('https://github.com/login/oauth/authorize');
     authUrl.searchParams.append('client_id', clientId);
 
@@ -76,10 +75,7 @@ router.get('/github/callback', async (req, res) => {
   }
 
 
-  console.log("RECEIVED STATE:", state);
-
   const integration = await Integration.findOne({ provider: 'github', state });
-  console.log("FOUND DOC:", integration);
   if (!integration) return res.status(400).json({ error: 'Invalid or expired OAuth state.' });
 
   const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
@@ -225,7 +221,8 @@ router.post(
           { upsert: true }
         );
 
-        if (fullName && process.env.BACKEND_API_URL) {
+        const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
+        if (fullName && process.env.BACKEND_API_URL && webhookSecret) {
           try {
             await githubRequest(`/repos/${fullName}/hooks`, integration, {
               method: 'POST',
@@ -236,7 +233,7 @@ router.post(
                 config: {
                   url: `${process.env.BACKEND_API_URL}/api/webhooks/github`,
                   content_type: 'json',
-                  secret: process.env.GITHUB_WEBHOOK_SECRET || '',
+                  secret: webhookSecret,
                 },
               }),
             });
@@ -244,6 +241,9 @@ router.post(
           } catch (hookErr) {
             results.push({ repoId, status: 'webhook_failed', error: hookErr.message });
           }
+        } else if (fullName && process.env.BACKEND_API_URL && !webhookSecret) {
+          console.warn('[track-repos] GITHUB_WEBHOOK_SECRET not set — skipping webhook registration for', fullName);
+          results.push({ repoId, status: 'tracked_no_webhook', reason: 'GITHUB_WEBHOOK_SECRET not configured' });
         } else {
           results.push({ repoId, status: 'tracked_no_webhook' });
         }
@@ -712,7 +712,6 @@ router.get(
       },
       { upsert: true, new: true }
     );
-    console.log('[jira/auth] SAVED STATE:', state);
 
     const redirectUri = getJiraCallbackUrl();
     if (!redirectUri) {
@@ -743,10 +742,7 @@ router.get('/jira/callback', async (req, res) => {
     return res.status(400).json({ error: 'Missing code or state parameter.' });
   }
 
-  console.log('[jira/callback] RECEIVED STATE:', state);
-
   const integration = await Integration.findOne({ provider: 'jira', state });
-  console.log('[jira/callback] FOUND DOC:', integration ? 'YES' : 'NO');
   if (!integration) {
     return res.status(400).json({ error: 'Invalid or expired OAuth state.' });
   }

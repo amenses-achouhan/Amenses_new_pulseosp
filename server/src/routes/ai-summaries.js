@@ -155,7 +155,8 @@ router.get('/:id', authenticate, verifyTenantAccess, requirePermission('view_rep
  */
 router.post('/', authenticate, verifyTenantAccess, requirePermission('generate_reports'), async (req, res) => {
   try {
-    const { type = 'weekly', startDate, endDate, organizationId } = req.body;
+    const { type = 'weekly', startDate, endDate } = req.body;
+    const organizationId = req.organizationId;
 
     if (!organizationId) {
       return res.status(400).json({ error: 'organizationId is required' });

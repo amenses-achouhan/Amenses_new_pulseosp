@@ -13,9 +13,9 @@ class JiraService {
   get redirectUri() {
     try {
       const { getJiraCallbackUrl } = require('../utils/publicUrl');
-      return getJiraCallbackUrl() || 'http://localhost:5000/api/integrations/jira/callback';
+      return getJiraCallbackUrl();
     } catch {
-      return process.env.JIRA_REDIRECT_URI || process.env.JIRA_CALLBACK_URL || 'http://localhost:5000/api/integrations/jira/callback';
+      return process.env.JIRA_REDIRECT_URI || process.env.JIRA_CALLBACK_URL;
     }
   }
 

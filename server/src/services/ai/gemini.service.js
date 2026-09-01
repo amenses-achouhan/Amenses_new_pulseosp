@@ -2,7 +2,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { validateWithRetry } = require('../../ai/validation/ai-summary.validation');
 
 // Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+if (!GEMINI_API_KEY && process.env.NODE_ENV === 'production') {
+  console.error('[gemini] GEMINI_API_KEY is not set — AI summary generation will fail in production');
+}
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Define output schema interface (for JSDoc)
 /**
@@ -140,6 +144,9 @@ class GeminiService {
    * @returns {Promise<AISummary>} Parsed and validated AI summary
    */
   async generateSummary(context, summaryType = 'Weekly Engineering Summary') {
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured on this server. Set it in server/.env');
+    }
     return await validateWithRetry(
       async () => {
         const prompt = buildPrompt(context, summaryType);

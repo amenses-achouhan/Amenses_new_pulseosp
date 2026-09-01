@@ -13,7 +13,11 @@ const { hasPermission } = require('./src/config/permissions');
 async function runVerification() {
   console.log('=== PHASE 1 AUTOMATED VERIFICATION ===\n');
 
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/pulseops_v2';
+  const mongoUri = process.env.MONGO_URI;
+  if (!mongoUri) {
+    console.error('❌ MONGO_URI is not set. Add it to server/.env');
+    process.exit(1);
+  }
   try {
     await mongoose.connect(mongoUri);
     console.log('✅ MongoDB connected successfully.');

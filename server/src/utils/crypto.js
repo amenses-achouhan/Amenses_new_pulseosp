@@ -10,12 +10,10 @@
  */
 const crypto = require('crypto');
 
-const FALLBACK_KEY = '0123456789abcdef0123456789abcdef';
-
 function getKey() {
-  const secret = process.env.TOKEN_ENCRYPTION_KEY || FALLBACK_KEY;
+  const secret = process.env.TOKEN_ENCRYPTION_KEY;
   if (!secret || String(secret).length < 16) {
-    throw new Error('TOKEN_ENCRYPTION_KEY must be at least 16 characters');
+    throw new Error('TOKEN_ENCRYPTION_KEY must be set and at least 16 characters. Add it to server/.env');
   }
   return crypto.createHash('sha256').update(String(secret)).digest();
 }
