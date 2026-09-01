@@ -27,7 +27,7 @@ import {
 import { fetchDashboard } from './analyticsApi';
 import CreateWorkspaceModal from './CreateWorkspaceModal';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 const REPOS_ENDPOINT = `${API_BASE}/api/repositories`;
 // Slack conversations endpoint requires workspaceId in the URL path;

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { setPendingSignup, takePendingSignup } from '../../lib/pendingSignup';
 
 // Backend API base.
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const REGISTER_ENDPOINT = `${API_BASE}/api/auth/register`;
 
 // XSS guard

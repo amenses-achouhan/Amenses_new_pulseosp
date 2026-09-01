@@ -9,7 +9,7 @@ import { useSession } from 'next-auth/react';
 // --pulse-sidebar-bg). Values refresh whenever the session/token changes so
 // switching workspaces re-themes the shell automatically.
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 
 export const DEFAULT_THEME = {

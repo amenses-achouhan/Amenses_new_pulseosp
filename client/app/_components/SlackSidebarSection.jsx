@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { Hash, Lock, Users, MessageSquare, RefreshCw } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 
 /**
  * Slack navigation section for the workspace sidebar.

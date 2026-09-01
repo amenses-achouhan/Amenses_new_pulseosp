@@ -27,37 +27,51 @@ const app = express();
 // helmet package cannot be installed offline on this machine; same headers).
 app.use(securityHeaders);
 
-// TASK-112: dynamic CORS allowlist.
-//  - Requests with no Origin (curl, server-to-server NextAuth -> Express) pass.
-//  - process.env.FRONTEND_URL is always allowed.
-//  - In non-production, http://localhost:3000 and http://localhost:3100 are
-//    also allowed (client dev server + production-build smoke-test ports).
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000';
-const allowedOrigins = [
+// Dynamic CORS allowlist.
+// - Requests with no Origin (curl, server-to-server NextAuth → Express) pass.
+// - Production: only env-configured origins (FRONTEND_URL, CLIENT_URL, ALLOWED_ORIGIN).
+// - Development: also allow localhost origins for the Next.js dev server.
+const productionOrigins = [
   process.env.FRONTEND_URL,
   process.env.CLIENT_URL,
+  process.env.ALLOWED_ORIGIN,
+].filter(Boolean);
+
+const devOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:3001',
   'http://localhost:3100',
   'http://localhost:3002',
-].filter(Boolean);
+];
+
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? productionOrigins
+  : [...devOrigins, ...productionOrigins];
+
+if (process.env.NODE_ENV === 'production') {
+  console.log('[cors] Production allowed origins:', allowedOrigins);
+} else {
+  console.log('[cors] Development allowed origins:', allowedOrigins);
+}
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (server-to-server, curl, mobile apps)
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
     }
+
+    console.error('[cors] Origin rejected:', origin, '| Allowed:', allowedOrigins);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Organization-Id'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-organization-id'],
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));

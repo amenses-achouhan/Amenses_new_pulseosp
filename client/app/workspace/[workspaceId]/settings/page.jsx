@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../lib/api';
 
 function PasswordSection({ token }) {
   const [currentPassword, setCurrentPassword] = useState('');

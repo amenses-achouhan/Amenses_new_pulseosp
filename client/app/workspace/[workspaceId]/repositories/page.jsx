@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Loader2, ExternalLink, GitBranch, CalendarDays, BookOpen, ChevronRight } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../lib/api';
 
 // ─── GitHub icon (matches the Integrations page) ─────────────────────────────
 

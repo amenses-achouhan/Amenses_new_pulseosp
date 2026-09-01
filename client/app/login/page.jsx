@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 // Backend API base.
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const LOGIN_ENDPOINT = `${API_BASE}/api/auth/login`;
 
 // XSS guard

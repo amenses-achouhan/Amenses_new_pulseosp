@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { Bell, GitBranch, MessageSquare, Ticket, BarChart, X, CheckCheck } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 
 const SOURCE_ICON = {
   github:    GitBranch,

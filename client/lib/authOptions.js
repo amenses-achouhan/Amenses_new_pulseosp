@@ -2,10 +2,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_EXPRESS_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:5000';
+import API_BASE from './api';
 
 /** @type {import('next-auth').AuthOptions} */
 export const authOptions = {

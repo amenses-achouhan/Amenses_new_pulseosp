@@ -7,7 +7,7 @@ import { Loader2, Check, ChevronRight, Plus } from 'lucide-react';
 import CreateWorkspaceModal from '../../../_components/CreateWorkspaceModal';
 
 // Backend API base — mirror of the dashboard / sidebar pages.
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../lib/api';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 const SWITCH_ENDPOINT = `${API_BASE}/api/organizations/switch-org`;
 

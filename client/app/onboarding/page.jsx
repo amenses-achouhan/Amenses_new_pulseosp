@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import AuthShell from '../_components/AuthShell';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const ONBOARD_ENDPOINT = `${API_BASE}/api/organizations/onboard`;
 
 const TEAM_SIZES = ['1-10', '11-50', '51-200', '200+'];

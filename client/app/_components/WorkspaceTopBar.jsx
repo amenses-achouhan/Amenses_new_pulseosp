@@ -8,7 +8,7 @@ import { Check, User, Plus, LogOut, ChevronDown, Building2 } from 'lucide-react'
 import ThemeToggle from './ThemeToggle';
 import NotificationBell from './NotificationBell';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 const SWITCH_ENDPOINT = `${API_BASE}/api/organizations/switch-org`;
 

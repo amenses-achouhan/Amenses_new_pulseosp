@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import AuthShell from '../_components/AuthShell';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const VERIFY_OTP_ENDPOINT = `${API_BASE}/api/auth/verify-password-reset-otp`;
 const RESET_ENDPOINT = `${API_BASE}/api/auth/reset-password`;
 const RESEND_ENDPOINT = `${API_BASE}/api/auth/resend-password-otp`;

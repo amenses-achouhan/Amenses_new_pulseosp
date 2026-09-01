@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { ShieldAlert } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../lib/api';
 
 const ROLE_OPTIONS = {
   owner: ['developer', 'maintainer', 'admin', 'viewer'],

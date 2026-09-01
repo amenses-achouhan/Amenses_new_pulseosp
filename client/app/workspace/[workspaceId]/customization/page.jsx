@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { Check, Sun, Moon, Monitor, Palette, SlidersHorizontal } from 'lucide-react';
 import { ACCENT_SWATCHES } from '../../../_components/WorkspaceSidebar';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../lib/api';
 
 export default function CustomizationPage() {
   const params = useParams();

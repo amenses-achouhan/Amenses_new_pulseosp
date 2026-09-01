@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import AuthShell from '../_components/AuthShell';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 
 const ROLE_COLORS = {
   owner: { bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' },

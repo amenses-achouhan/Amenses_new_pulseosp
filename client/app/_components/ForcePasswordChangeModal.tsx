@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const CHANGE_PASSWORD_ENDPOINT = `${API_BASE}/api/auth/change-password`;
 
 export default function ForcePasswordChangeModal({ mustChangePassword }) {

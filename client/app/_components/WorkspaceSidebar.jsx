@@ -23,7 +23,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { hasPermission } from '../_lib/permissions';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 
 export const ACCENT_SWATCHES = [
   { id: 'violet', label: 'Violet', hex: '#4F46E5', hover: '#4338CA', lightBg: '#EEF2FF' },

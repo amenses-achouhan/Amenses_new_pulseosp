@@ -8,7 +8,7 @@ import { fetchLatestSummary, generateSummary } from './aiSummaryApi';
 import { fetchDashboard } from './analyticsApi';
 import './AISummaryPanel.css';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 
 export default function AISummaryPanel({ organizationId }) {
   const [error, setError] = useState(null);

@@ -14,7 +14,7 @@ import Branches from './components/Branches';
 import RepositoryActivity from './components/RepositoryActivity';
 import RepositoryMetadata from './components/RepositoryMetadata';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../../lib/api';
 
 export default function RepositoryDetailsPage({ params }) {
 const { workspaceId, repositoryId } = params;

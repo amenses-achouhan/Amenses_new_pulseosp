@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { ArrowLeft, RefreshCw, Loader2, MessageSquare } from 'lucide-react';
 import MessageItem from './components/MessageItem';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../../lib/api';
 
 const SYNC_BADGE = {
   NOT_SYNCED: { label: 'Not synced', className: 'bg-slate-100 text-slate-600' },

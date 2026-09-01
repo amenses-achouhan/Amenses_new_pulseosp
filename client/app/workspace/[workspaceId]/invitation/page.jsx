@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import AuthShell from '../../../_components/AuthShell';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../../../lib/api';
 const CHANGE_PASSWORD_ENDPOINT = `${API_BASE}/api/auth/change-password`;
 
 const FLOAT_INPUT =

@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import AuthShell from '../_components/AuthShell';
 
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+import API_BASE from '../../lib/api';
 const VERIFY_ENDPOINT = `${API_BASE}/api/auth/verify-email`;
 const RESEND_ENDPOINT = `${API_BASE}/api/auth/resend-otp`;
 
