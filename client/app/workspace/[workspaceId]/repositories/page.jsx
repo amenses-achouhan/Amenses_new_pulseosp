@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import { Loader2, ExternalLink, GitBranch, CalendarDays, BookOpen, ChevronRight } from 'lucide-react';
 
 import API_BASE from '../../../../lib/api';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout';
 
 // ─── GitHub icon (matches the Integrations page) ─────────────────────────────
 
@@ -151,7 +152,7 @@ export default function RepositoriesPage({ params }) {
     if (!repo?._id || removing) return;
     setRemoving(repo._id);
     try {
-      const res = await fetch(`${API_BASE}/api/repositories/${repo._id}`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/repositories/${repo._id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
@@ -173,7 +174,7 @@ export default function RepositoriesPage({ params }) {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${API_BASE}/api/repositories`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/repositories`, {
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
       if (!res.ok) {

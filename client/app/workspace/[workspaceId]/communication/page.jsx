@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import API_BASE from '../../../../lib/api';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -259,7 +260,7 @@ function SlackFileAttachment({ file, token, workspaceId }) {
     setPreviewFailed(false);
     (async () => {
       try {
-        const r = await fetch(proxyUrl, {
+        const r = await fetchWithTimeout(proxyUrl, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-organization-id': workspaceId,
@@ -520,7 +521,7 @@ export default function CommunicationPage({ params }) {
       if (!silent) setLoading(true);
       setLoadError(null);
       try {
-        const res = await fetch(`${API_BASE}/api/communication/messages`, {
+        const res = await fetchWithTimeout(`${API_BASE}/api/communication/messages`, {
           headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
         });
         const body = await res.json().catch(() => ({}));
@@ -559,7 +560,7 @@ export default function CommunicationPage({ params }) {
     if (!message?.ts) return;
     setThreadLoading(true);
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `${API_BASE}/api/communication/messages/${encodeURIComponent(message.ts)}/thread`,
         { headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId } }
       );

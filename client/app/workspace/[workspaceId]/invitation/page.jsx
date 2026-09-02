@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import AuthShell from '../../../_components/AuthShell';
 
 import API_BASE from '../../../../lib/api';
+import { fetchJSONWithTimeout } from '../../../../lib/fetchWithTimeout';
 const CHANGE_PASSWORD_ENDPOINT = `${API_BASE}/api/auth/change-password`;
 
 const FLOAT_INPUT =
@@ -75,15 +76,14 @@ export default function InvitationLandingPage() {
     setBusy(true);
     try {
       const bearer = session?.accessToken;
-      const res = await fetch(CHANGE_PASSWORD_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(CHANGE_PASSWORD_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(bearer ? { Authorization: `Bearer ${bearer.trim()}` } : {}),
         },
         body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      const data = await res.json().catch(() => ({}));
+      }, 10000);
       if (!res.ok) {
         setError(data?.message || `Password change failed (${res.status}).`);
         return;

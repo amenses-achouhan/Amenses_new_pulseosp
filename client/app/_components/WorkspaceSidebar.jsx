@@ -24,6 +24,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { hasPermission } from '../_lib/permissions';
 
 import API_BASE from '../../lib/api';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 
 export const ACCENT_SWATCHES = [
   { id: 'violet', label: 'Violet', hex: '#4F46E5', hover: '#4338CA', lightBg: '#EEF2FF' },
@@ -66,12 +67,12 @@ export default function WorkspaceSidebar({ workspaceId, role }) {
     try { token = localStorage.getItem('pulseops_token'); } catch {}
     if (!token) return;
 
-    fetch(`${API_BASE}/api/organizations/settings`, {
+    fetchWithTimeout(`${API_BASE}/api/organizations/settings`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'x-organization-id': workspaceId,
       },
-    })
+    }, 10000)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const color = data?.organization?.themeSettings?.primaryColor;

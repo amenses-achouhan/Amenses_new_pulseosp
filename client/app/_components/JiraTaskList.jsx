@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { Loader2, Search, Calendar, User, Tag, AlertCircle, ExternalLink, RefreshCw } from 'lucide-react';
 
 import API_BASE from '../../lib/api';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 
 export default function JiraTaskList({ workspaceId }) {
   const { data: session } = useSession();
@@ -36,8 +37,8 @@ export default function JiraTaskList({ workspaceId }) {
     const fetchMeta = async () => {
       try {
         const [statusRes, projectsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/integrations/jira/status`, { headers }),
-          fetch(`${API_BASE}/api/integrations/jira/projects`, { headers }),
+          fetchWithTimeout(`${API_BASE}/api/integrations/jira/status`, { headers }, 10000),
+          fetchWithTimeout(`${API_BASE}/api/integrations/jira/projects`, { headers }, 10000),
         ]);
 
         if (statusRes.ok) {
@@ -68,7 +69,7 @@ export default function JiraTaskList({ workspaceId }) {
       if (selectedProject) url += `&projectKey=${encodeURIComponent(selectedProject)}`;
       if (selectedStatus) url += `&status=${encodeURIComponent(selectedStatus)}`;
 
-      const res = await fetch(url, { headers });
+      const res = await fetchWithTimeout(url, { headers }, 10000);
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {

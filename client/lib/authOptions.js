@@ -25,6 +25,8 @@ export const authOptions = {
         if (!hasPassword && !hasVerifiedToken) return null;
 
         let res;
+        const loginController = new AbortController();
+        const loginTimeout = setTimeout(() => loginController.abort(), 8000);
         try {
           res = await fetch(`${API_BASE}/api/auth/login`, {
             method: 'POST',
@@ -39,15 +41,20 @@ export const authOptions = {
                 ? { inviteToken: credentials.inviteToken }
                 : {}),
             }),
+            signal: loginController.signal,
           });
         } catch (error) {
+          clearTimeout(loginTimeout);
           const err = new Error(
-            'Could not reach the authentication server. Please try again.'
+            error.name === 'AbortError'
+              ? 'Authentication server timed out. Please try again.'
+              : 'Could not reach the authentication server. Please try again.'
           );
-          err.code = 'NETWORK_ERROR';
+          err.code = error.name === 'AbortError' ? 'TIMEOUT' : 'NETWORK_ERROR';
           err.status = 0;
           throw err;
         }
+        clearTimeout(loginTimeout);
 
         if (!res.ok) {
           let message = `Login failed (${res.status}).`;
@@ -114,12 +121,16 @@ export const authOptions = {
       };
       if (profile?.inviteToken) payload.inviteToken = profile.inviteToken;
 
+      const syncController = new AbortController();
+      const syncTimeout = setTimeout(() => syncController.abort(), 8000);
       try {
         const res = await fetch(`${API_BASE}/api/auth/oauth/sync`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
+          signal: syncController.signal,
         });
+        clearTimeout(syncTimeout);
 
         if (!res.ok) {
           console.error(`[next-auth] oauth/sync failed (${res.status})`);
@@ -139,7 +150,12 @@ export const authOptions = {
         user.workspaces = Array.isArray(u.workspaces) ? u.workspaces : [];
         user.isInvitedUser = Boolean(u.isInvitedUser);
       } catch (error) {
-        console.error('[next-auth] oauth/sync network error:', error.message);
+        clearTimeout(syncTimeout);
+        if (error.name === 'AbortError') {
+          console.error('[next-auth] oauth/sync timed out (8s) — Render may be cold-starting');
+        } else {
+          console.error('[next-auth] oauth/sync network error:', error.message);
+        }
         return false;
       }
       return true;

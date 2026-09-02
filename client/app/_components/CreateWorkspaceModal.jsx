@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { X, Loader2, Plus } from 'lucide-react';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const ONBOARD_ENDPOINT = `${API_BASE}/api/organizations/onboard`;
 
 const TEAM_SIZES = ['1-10', '11-50', '51-200', '200+'];
@@ -70,15 +71,14 @@ export default function CreateWorkspaceModal({ open, onClose }) {
       try { storedToken = localStorage.getItem('pulseops_token'); } catch {}
       const activeToken = session?.accessToken || storedToken;
 
-      const res = await fetch(ONBOARD_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(ONBOARD_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(activeToken ? { Authorization: `Bearer ${activeToken.trim()}` } : {}),
         },
         body: JSON.stringify({ name: trimmedName, teamSize, primaryFocus: trimmedFocus }),
-      });
-      const data = await res.json().catch(() => ({}));
+      }, 10000);
 
       if (!res.ok) {
         setError(data?.message || `Could not create workspace (${res.status}). Please try again.`);

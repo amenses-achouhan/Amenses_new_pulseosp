@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import AuthShell from '../_components/AuthShell';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 
 const ROLE_COLORS = {
   owner: { bg: 'bg-violet-100', text: 'text-violet-700', dot: 'bg-violet-500' },
@@ -111,16 +112,14 @@ export default function SelectWorkspacePage() {
         try { return session?.accessToken || localStorage.getItem('pulseops_token'); } catch { return session?.accessToken || null; }
       })();
 
-      const res = await fetch(`${API_BASE}/api/organizations/switch-org`, {
+      const { data, res } = await fetchJSONWithTimeout(`${API_BASE}/api/organizations/switch-org`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ targetOrganizationId: workspace.id }),
-      });
-
-      const data = await res.json().catch(() => ({}));
+      }, 10000);
 
       if (!res.ok) {
         setError(data?.message || `Could not switch workspace (${res.status}). Please try again.`);

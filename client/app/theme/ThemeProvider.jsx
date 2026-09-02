@@ -10,6 +10,7 @@ import { useSession } from 'next-auth/react';
 // switching workspaces re-themes the shell automatically.
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 
 export const DEFAULT_THEME = {
@@ -44,10 +45,9 @@ export default function ThemeProvider({ children }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(ME_ENDPOINT, {
+        const { data, res } = await fetchJSONWithTimeout(ME_ENDPOINT, {
           headers: { Authorization: `Bearer ${session.accessToken.trim()}` },
-        });
-        const data = await res.json().catch(() => ({}));
+        }, 10000);
         if (cancelled) return;
         if (res.ok && data?.activeOrganization?.themeSettings) {
           setTheme({

@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { Loader2, Check, Copy, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 import API_BASE from '../../../../lib/api';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout';
 
 // --- Mini UI components ---
 
@@ -105,7 +106,7 @@ function GitHubPanel({ workspaceId, token }) {
 
   const loadStatus = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/github/status`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/github/status`, {
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
       if (res.ok) {
@@ -136,7 +137,7 @@ function GitHubPanel({ workspaceId, token }) {
     setLoadingRepos(true);
     setConnectError('');
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/github/repositories`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/github/repositories`, {
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
       if (res.ok) {
@@ -157,7 +158,7 @@ function GitHubPanel({ workspaceId, token }) {
     setConnecting(true);
     setConnectError('');
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/github/connect`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/github/connect`, {
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
       const data = await res.json();
@@ -181,7 +182,7 @@ function GitHubPanel({ workspaceId, token }) {
     setDisabling(true);
     setConnectError('');
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/github/disable`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/github/disable`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
@@ -210,7 +211,7 @@ function GitHubPanel({ workspaceId, token }) {
     const importedIds = [...selectedRepos];
     setSyncing(true);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/track-repositories`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/track-repositories`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -379,7 +380,7 @@ function SlackPanel({ workspaceId, token }) {
     if (!token) return;
     setStatusLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/slack/status`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/slack/status`, { headers });
       if (res.ok) {
         const data = await res.json();
         setIsConnected(Boolean(data.connected));
@@ -398,7 +399,7 @@ function SlackPanel({ workspaceId, token }) {
     if (!token) return null;
     setConvLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/workspace/${workspaceId}/slack/conversations`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/workspace/${workspaceId}/slack/conversations`, { headers });
       if (res.ok) {
         const data = await res.json();
         const all = [
@@ -442,7 +443,7 @@ function SlackPanel({ workspaceId, token }) {
     setConnecting(true);
     setConnectError('');
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/slack/authorize`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/slack/authorize`, { headers });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -460,7 +461,7 @@ function SlackPanel({ workspaceId, token }) {
     setDisabling(true);
     setDisableError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/slack/disable`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/slack/disable`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
@@ -606,7 +607,7 @@ function JiraPanel({ workspaceId, token }) {
     if (!token) return;
     setStatusLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/jira/status`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/status`, { headers });
       if (res.ok) {
         const data = await res.json();
         setIsConnected(Boolean(data.connected));
@@ -630,7 +631,7 @@ function JiraPanel({ workspaceId, token }) {
     setProjectsLoading(true);
     setProjectsError('');
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/jira/projects`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/projects`, { headers });
       if (res.ok) {
         const data = await res.json();
         setProjects(data);
@@ -698,7 +699,7 @@ function JiraPanel({ workspaceId, token }) {
     setConnecting(true);
     setConnectError('');
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/jira/auth`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/auth`, { headers });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -716,7 +717,7 @@ function JiraPanel({ workspaceId, token }) {
     setDisabling(true);
     setDisableMsg(null);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/jira/disable`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/disable`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
       });
@@ -744,7 +745,7 @@ function JiraPanel({ workspaceId, token }) {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/jira/sync`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/sync`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectKey: selectedProjectKey }),
@@ -774,7 +775,7 @@ function JiraPanel({ workspaceId, token }) {
     setWebhookRegistering(true);
     setWebhookResult(null);
     try {
-      const res = await fetch(`${API_BASE}/api/integrations/jira/register-webhook`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/register-webhook`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectKey: selectedProjectKey }),

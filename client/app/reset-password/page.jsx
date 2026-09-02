@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthShell from '../_components/AuthShell';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const VERIFY_OTP_ENDPOINT = `${API_BASE}/api/auth/verify-password-reset-otp`;
 const RESET_ENDPOINT = `${API_BASE}/api/auth/reset-password`;
 const RESEND_ENDPOINT = `${API_BASE}/api/auth/resend-password-otp`;
@@ -68,12 +69,11 @@ function ResetPasswordInner() {
 
     setBusy(true);
     try {
-      const res = await fetch(VERIFY_OTP_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(VERIFY_OTP_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: trimmedOtp }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Verification failed (${res.status}).` });
         return;
@@ -99,12 +99,11 @@ function ResetPasswordInner() {
 
     setBusy(true);
     try {
-      const res = await fetch(RESEND_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(RESEND_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Resend failed (${res.status}).` });
         return;
@@ -138,12 +137,11 @@ function ResetPasswordInner() {
 
     setBusy(true);
     try {
-      const res = await fetch(RESET_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(RESET_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, resetToken, password: newPassword }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Reset failed (${res.status}).` });
         return;

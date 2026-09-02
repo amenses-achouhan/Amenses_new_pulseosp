@@ -7,6 +7,7 @@ import { Bell, GitBranch, MessageSquare, Ticket, BarChart, X, CheckCheck } from 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import API_BASE from '../../lib/api';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 
 const SOURCE_ICON = {
   github:    GitBranch,
@@ -57,7 +58,7 @@ export default function NotificationBell({ organizationId, role }) {
   const { data } = useQuery({
     queryKey: ['notifications', organizationId],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/api/notifications?limit=20`, { headers: authHeaders });
+      const res = await fetchWithTimeout(`${API_BASE}/api/notifications?limit=20`, { headers: authHeaders }, 10000);
       if (!res.ok) return { notifications: [], unreadCount: 0 };
       return res.json();
     },
@@ -74,10 +75,10 @@ export default function NotificationBell({ organizationId, role }) {
   // ---------------------------------------------------------------------------
   const markOneMut = useMutation({
     mutationFn: async (id) => {
-      await fetch(`${API_BASE}/api/notifications/${id}/read`, {
+      await fetchWithTimeout(`${API_BASE}/api/notifications/${id}/read`, {
         method: 'POST',
         headers: authHeaders,
-      });
+      }, 10000);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] }),
   });
@@ -87,10 +88,10 @@ export default function NotificationBell({ organizationId, role }) {
   // ---------------------------------------------------------------------------
   const markAllMut = useMutation({
     mutationFn: async () => {
-      await fetch(`${API_BASE}/api/notifications/read-all`, {
+      await fetchWithTimeout(`${API_BASE}/api/notifications/read-all`, {
         method: 'POST',
         headers: authHeaders,
-      });
+      }, 10000);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications', organizationId] }),
   });

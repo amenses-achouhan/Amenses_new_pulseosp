@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { fetchWithTimeout } from '../../../../../lib/fetchWithTimeout';
 
 export default function ThemeSettings() {
   const router = useRouter();
@@ -8,7 +9,7 @@ export default function ThemeSettings() {
   const user = session?.user as any;
 
   const handleColorChange = async (field: string, value: string) => {
-    const res = await fetch(`/api/organizations/settings/theme`, {
+    const res = await fetchWithTimeout(`/api/organizations/settings/theme`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),

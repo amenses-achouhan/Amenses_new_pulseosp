@@ -9,6 +9,7 @@ import ThemeToggle from './ThemeToggle';
 import NotificationBell from './NotificationBell';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 const SWITCH_ENDPOINT = `${API_BASE}/api/organizations/switch-org`;
 
@@ -35,10 +36,9 @@ export default function WorkspaceTopBar({ workspaceId, role }) {
 
     (async () => {
       try {
-        const res = await fetch(ME_ENDPOINT, {
+        const { data, res } = await fetchJSONWithTimeout(ME_ENDPOINT, {
           headers: { Authorization: `Bearer ${bearer.trim()}` },
-        });
-        const data = await res.json().catch(() => ({}));
+        }, 10000);
         if (!cancelled && res.ok) {
           setMe(data);
         }
@@ -71,15 +71,14 @@ export default function WorkspaceTopBar({ workspaceId, role }) {
         } catch { }
         const bearer = session?.accessToken || storedToken;
 
-        const res = await fetch(SWITCH_ENDPOINT, {
+        const { data, res } = await fetchJSONWithTimeout(SWITCH_ENDPOINT, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(bearer ? { Authorization: `Bearer ${bearer.trim()}` } : {}),
           },
           body: JSON.stringify({ targetOrganizationId: orgId }),
-        });
-        const data = await res.json().catch(() => ({}));
+        }, 10000);
 
         if (!res.ok) {
           setSwitchError(data?.message || `Could not switch workspace (${res.status}).`);

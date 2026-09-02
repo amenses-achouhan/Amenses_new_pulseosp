@@ -6,6 +6,7 @@ import Link from 'next/link';
 import AuthShell from '../_components/AuthShell';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const FORGOT_ENDPOINT = `${API_BASE}/api/auth/forgot-password`;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,12 +46,11 @@ function ForgotPasswordInner() {
 
     setBusy(true);
     try {
-      const res = await fetch(FORGOT_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(FORGOT_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmedEmail }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Request failed (${res.status}).` });
         return;

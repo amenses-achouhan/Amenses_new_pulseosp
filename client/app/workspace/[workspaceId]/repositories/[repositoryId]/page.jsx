@@ -15,6 +15,7 @@ import RepositoryActivity from './components/RepositoryActivity';
 import RepositoryMetadata from './components/RepositoryMetadata';
 
 import API_BASE from '../../../../../lib/api';
+import { fetchWithTimeout } from '../../../../../lib/fetchWithTimeout';
 
 export default function RepositoryDetailsPage({ params }) {
 const { workspaceId, repositoryId } = params;
@@ -31,7 +32,7 @@ const load = async () => {
   setLoading(true);
   setError('');
   try {
-    const res = await fetch(`${API_BASE}/api/repositories/${repositoryId}`, {
+    const res = await fetchWithTimeout(`${API_BASE}/api/repositories/${repositoryId}`, {
       headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
     });
     if (!res.ok) {

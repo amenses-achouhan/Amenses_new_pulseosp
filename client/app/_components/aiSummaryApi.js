@@ -20,6 +20,12 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 const LATEST_ENDPOINT = `${API_BASE}/api/ai-summaries/latest`;
 const GENERATE_ENDPOINT = `${API_BASE}/api/ai-summaries`;
 
+function fetchWithTimeout(url, opts = {}, ms = 10000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
+}
+
 /**
  * Build auth headers for a request.
  * @param {string|null} token - Bearer token from session or localStorage
@@ -44,7 +50,7 @@ function buildHeaders(token, organizationId) {
 async function fetchLatestSummary(organizationId, token) {
   try {
     const headers = buildHeaders(token, organizationId);
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${LATEST_ENDPOINT}?organizationId=${encodeURIComponent(organizationId)}`,
       { headers }
     );
@@ -70,7 +76,7 @@ async function fetchLatestSummary(organizationId, token) {
  */
 async function generateSummary(organizationId, type = 'weekly', token) {
   const headers = buildHeaders(token, organizationId);
-  const res = await fetch(GENERATE_ENDPOINT, {
+  const res = await fetchWithTimeout(GENERATE_ENDPOINT, {
     method: 'POST',
     headers,
     body: JSON.stringify({ organizationId, type }),

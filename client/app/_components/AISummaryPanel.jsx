@@ -9,6 +9,7 @@ import { fetchDashboard } from './analyticsApi';
 import './AISummaryPanel.css';
 
 import API_BASE from '../../lib/api';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 
 export default function AISummaryPanel({ organizationId }) {
   const [error, setError] = useState(null);
@@ -37,9 +38,9 @@ export default function AISummaryPanel({ organizationId }) {
     queryKey: ['membersList', organizationId],
     queryFn: async () => {
       if (!bearer || !organizationId) return [];
-      const res = await fetch(`${API_BASE}/api/organizations/members`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/organizations/members`, {
         headers: { Authorization: `Bearer ${bearer}`, 'x-organization-id': organizationId },
-      });
+      }, 10000);
       if (!res.ok) return [];
       const json = await res.json();
       return json?.members || [];

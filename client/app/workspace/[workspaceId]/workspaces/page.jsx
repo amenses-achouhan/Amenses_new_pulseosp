@@ -8,6 +8,7 @@ import CreateWorkspaceModal from '../../../_components/CreateWorkspaceModal';
 
 // Backend API base — mirror of the dashboard / sidebar pages.
 import API_BASE from '../../../../lib/api';
+import { fetchJSONWithTimeout } from '../../../../lib/fetchWithTimeout';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 const SWITCH_ENDPOINT = `${API_BASE}/api/organizations/switch-org`;
 
@@ -35,10 +36,9 @@ export default function WorkspacesPage({ params }) {
 
     (async () => {
       try {
-        const res = await fetch(ME_ENDPOINT, {
+        const { data, res } = await fetchJSONWithTimeout(ME_ENDPOINT, {
           headers: { Authorization: `Bearer ${token.trim()}` },
-        });
-        const data = await res.json().catch(() => ({}));
+        }, 10000);
         if (cancelled) return;
         if (res.ok) {
           setMe(data);
@@ -67,15 +67,14 @@ export default function WorkspacesPage({ params }) {
         storedToken = localStorage.getItem('pulseops_token');
       } catch (storageErr) {}
       const bearer = session?.accessToken || storedToken;
-      const res = await fetch(SWITCH_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(SWITCH_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(bearer ? { Authorization: `Bearer ${String(bearer).trim()}` } : {}),
         },
         body: JSON.stringify({ targetOrganizationId: orgId }),
-      });
-      const data = await res.json().catch(() => ({}));
+      }, 10000);
       if (res.status === 403) {
         setSwitchError(
           data?.message || 'Forbidden. You are not an active member of this organization.'

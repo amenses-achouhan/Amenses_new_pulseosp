@@ -15,9 +15,15 @@ function buildHeaders(token) {
   return headers;
 }
 
+function fetchWithTimeout(url, opts = {}, ms = 10000) {
+  const c = new AbortController();
+  const t = setTimeout(() => c.abort(), ms);
+  return fetch(url, { ...opts, signal: c.signal }).finally(() => clearTimeout(t));
+}
+
 /** Org health score, KPI cards w/ trends, team health list, risks & alerts. */
 async function fetchDashboard(orgId, days = 7, token = null) {
-  const res = await fetch(`${DASHBOARD_ENDPOINT}?days=${days}`, {
+  const res = await fetchWithTimeout(`${DASHBOARD_ENDPOINT}?days=${days}`, {
     headers: { ...buildHeaders(token), 'x-organization-id': orgId },
   });
   const json = await res.json().catch(() => ({}));
@@ -31,7 +37,7 @@ async function fetchDashboard(orgId, days = 7, token = null) {
 
 /** Per-developer stats table for the Developers page. */
 async function fetchDevelopers(orgId, days = 30, token = null) {
-  const res = await fetch(`${DEVELOPERS_ENDPOINT}?days=${days}`, {
+  const res = await fetchWithTimeout(`${DEVELOPERS_ENDPOINT}?days=${days}`, {
     headers: { ...buildHeaders(token), 'x-organization-id': orgId },
   });
   const json = await res.json().catch(() => ({}));
@@ -45,7 +51,7 @@ async function fetchDevelopers(orgId, days = 30, token = null) {
 
 /** Trigger on-demand recompute of analytics. */
 async function recomputeAnalytics(orgId, token = null) {
-  const res = await fetch(`${API_BASE}/api/analytics/recompute`, {
+  const res = await fetchWithTimeout(`${API_BASE}/api/analytics/recompute`, {
     method: 'POST',
     headers: { ...buildHeaders(token), 'x-organization-id': orgId },
   });

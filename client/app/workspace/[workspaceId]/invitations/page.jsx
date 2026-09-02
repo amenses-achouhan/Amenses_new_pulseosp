@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ShieldAlert } from 'lucide-react';
 
 import API_BASE from '../../../../lib/api';
+import { fetchWithTimeout, fetchJSONWithTimeout } from '../../../../lib/fetchWithTimeout';
 
 const ROLE_OPTIONS = {
   owner: ['developer', 'maintainer', 'admin', 'viewer'],
@@ -73,7 +74,7 @@ export default function InvitationsPage({ params }) {
         'Content-Type': 'application/json',
       };
       const [membersRes] = await Promise.all([
-        fetch(`${API_BASE}/api/organizations/members`, { headers }),
+        fetchWithTimeout(`${API_BASE}/api/organizations/members`, { headers }, 10000),
       ]);
       if (membersRes.ok) {
         const data = await membersRes.json();
@@ -108,7 +109,7 @@ export default function InvitationsPage({ params }) {
 
     setSending(true);
     try {
-      const res = await fetch(`${API_BASE}/api/organizations/invite`, {
+      const { data: inviteData, res } = await fetchJSONWithTimeout(`${API_BASE}/api/organizations/invite`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -123,7 +124,6 @@ export default function InvitationsPage({ params }) {
           role: inviteRole,
         }),
       });
-      const data = await res.json();
       if (!res.ok) {
         setInviteError(data?.message || 'Failed to send invitation.');
       } else {

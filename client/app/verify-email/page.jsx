@@ -7,6 +7,7 @@ import Link from 'next/link';
 import AuthShell from '../_components/AuthShell';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const VERIFY_ENDPOINT = `${API_BASE}/api/auth/verify-email`;
 const RESEND_ENDPOINT = `${API_BASE}/api/auth/resend-otp`;
 
@@ -65,12 +66,11 @@ function VerifyEmailInner() {
 
     setBusy(true);
     try {
-      const res = await fetch(VERIFY_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(VERIFY_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: trimmedOtp }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Verification failed (${res.status}).` });
         return;
@@ -123,12 +123,11 @@ function VerifyEmailInner() {
 
     setBusy(true);
     try {
-      const res = await fetch(RESEND_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(RESEND_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Resend failed (${res.status}).` });
         return;

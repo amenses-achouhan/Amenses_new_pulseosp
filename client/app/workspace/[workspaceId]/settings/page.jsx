@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 
 import API_BASE from '../../../../lib/api';
+import { fetchJSONWithTimeout } from '../../../../lib/fetchWithTimeout';
 
 function PasswordSection({ token }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -27,15 +28,14 @@ function PasswordSection({ token }) {
 
     setBusy(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/change-password`, {
+      const { data, res } = await fetchJSONWithTimeout(`${API_BASE}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ currentPassword, newPassword }),
-      });
-      const data = await res.json();
+      }, 10000);
       if (res.ok) {
         setStatus({ ok: true, message: 'Password updated successfully.' });
         setCurrentPassword('');

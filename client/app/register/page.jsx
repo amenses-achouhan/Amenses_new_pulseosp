@@ -7,6 +7,7 @@ import { setPendingSignup, takePendingSignup } from '../../lib/pendingSignup';
 
 // Backend API base.
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const REGISTER_ENDPOINT = `${API_BASE}/api/auth/register`;
 
 // XSS guard
@@ -76,12 +77,11 @@ function RegisterInner() {
     if (!validate()) return;
     setBusy(true);
     try {
-      const res = await fetch(REGISTER_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(REGISTER_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: username.trim(), email: email.trim(), password }),
       });
-      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError({ message: data?.message || `Registration failed (${res.status}).` });
         return;

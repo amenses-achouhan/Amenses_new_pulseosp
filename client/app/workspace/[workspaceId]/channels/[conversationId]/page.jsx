@@ -8,6 +8,7 @@ import { ArrowLeft, RefreshCw, Loader2, MessageSquare } from 'lucide-react';
 import MessageItem from './components/MessageItem';
 
 import API_BASE from '../../../../../lib/api';
+import { fetchWithTimeout } from '../../../../../lib/fetchWithTimeout';
 
 const SYNC_BADGE = {
   NOT_SYNCED: { label: 'Not synced', className: 'bg-slate-100 text-slate-600' },
@@ -68,7 +69,7 @@ export default function ChannelPage() {
     if (!nextCursor || loadingOlder) return;
     setLoadingOlder(true);
     try {
-      const res = await fetch(
+      const res = await fetchWithTimeout(
         `${API_BASE}/api/workspace/${workspaceId}/slack/conversations/${conversationId}/messages?before=${encodeURIComponent(nextCursor)}`,
         { headers: authHeaders }
       );
@@ -92,7 +93,7 @@ export default function ChannelPage() {
     if (next[ts] && !threadReplies[ts]) {
       setThreadLoading((prev) => ({ ...prev, [ts]: true }));
       try {
-        const res = await fetch(
+        const res = await fetchWithTimeout(
           `${API_BASE}/api/workspace/${workspaceId}/slack/conversations/${conversationId}/messages?threadTs=${encodeURIComponent(ts)}&limit=100`,
           { headers: authHeaders }
         );

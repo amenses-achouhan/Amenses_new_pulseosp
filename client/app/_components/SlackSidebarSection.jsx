@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Hash, Lock, Users, MessageSquare, RefreshCw } from 'lucide-react';
 
 import API_BASE from '../../lib/api';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 
 /**
  * Slack navigation section for the workspace sidebar.
@@ -27,9 +28,9 @@ export default function SlackSidebarSection({ workspaceId }) {
   const load = async () => {
     if (!token || !workspaceId) return;
     try {
-      const res = await fetch(`${API_BASE}/api/workspace/${workspaceId}/slack/conversations`, {
+      const res = await fetchWithTimeout(`${API_BASE}/api/workspace/${workspaceId}/slack/conversations`, {
         headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
-      });
+      }, 10000);
       if (!res.ok) {
         setConnected(false);
         setGroups(null);

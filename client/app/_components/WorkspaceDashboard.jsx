@@ -28,6 +28,7 @@ import { fetchDashboard } from './analyticsApi';
 import CreateWorkspaceModal from './CreateWorkspaceModal';
 
 import API_BASE from '../../lib/api';
+import { fetchWithTimeout } from '../../lib/fetchWithTimeout';
 const ME_ENDPOINT = `${API_BASE}/api/auth/me`;
 const REPOS_ENDPOINT = `${API_BASE}/api/repositories`;
 // Slack conversations endpoint requires workspaceId in the URL path;
@@ -74,7 +75,7 @@ export default function WorkspaceDashboard() {
     };
 
     // 1. Fetch User / Org Me Data
-    fetch(ME_ENDPOINT, { headers })
+    fetchWithTimeout(ME_ENDPOINT, { headers }, 10000)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!cancelled && d) setMe(d);
@@ -82,7 +83,7 @@ export default function WorkspaceDashboard() {
       .catch(() => {});
 
     // 2. Fetch Connected Repositories
-    fetch(REPOS_ENDPOINT, { headers })
+    fetchWithTimeout(REPOS_ENDPOINT, { headers }, 10000)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!cancelled) {
@@ -96,7 +97,7 @@ export default function WorkspaceDashboard() {
       });
 
     // 3. Fetch Slack Conversations (channels)
-    fetch(`${API_BASE}/api/workspace/${workspaceId}/slack/conversations`, { headers })
+    fetchWithTimeout(`${API_BASE}/api/workspace/${workspaceId}/slack/conversations`, { headers }, 10000)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!cancelled) {

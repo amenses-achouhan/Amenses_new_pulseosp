@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 
 import API_BASE from '../../lib/api';
+import { fetchJSONWithTimeout } from '../../lib/fetchWithTimeout';
 const CHANGE_PASSWORD_ENDPOINT = `${API_BASE}/api/auth/change-password`;
 
 export default function ForcePasswordChangeModal({ mustChangePassword }) {
@@ -34,15 +35,14 @@ export default function ForcePasswordChangeModal({ mustChangePassword }) {
     try {
       const bearer = (session as any)?.accessToken ||
         (() => { try { return localStorage.getItem('pulseops_token'); } catch { return null; } })();
-      const res = await fetch(CHANGE_PASSWORD_ENDPOINT, {
+      const { data, res } = await fetchJSONWithTimeout(CHANGE_PASSWORD_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
         },
         body: JSON.stringify({ currentPassword, newPassword })
-      });
-      const data = await res.json();
+      }, 10000);
       
       if (!res.ok) {
         setError(data.message || 'Failed to update password');

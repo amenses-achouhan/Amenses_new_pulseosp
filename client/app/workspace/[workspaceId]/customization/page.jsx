@@ -8,6 +8,7 @@ import { Check, Sun, Moon, Monitor, Palette, SlidersHorizontal } from 'lucide-re
 import { ACCENT_SWATCHES } from '../../../_components/WorkspaceSidebar';
 
 import API_BASE from '../../../../lib/api';
+import { fetchWithTimeout } from '../../../../lib/fetchWithTimeout';
 
 export default function CustomizationPage() {
   const params = useParams();
@@ -47,12 +48,12 @@ export default function CustomizationPage() {
     try { token = localStorage.getItem('pulseops_token'); } catch {}
     if (!token) return;
 
-    fetch(`${API_BASE}/api/organizations/settings`, {
+    fetchWithTimeout(`${API_BASE}/api/organizations/settings`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'x-organization-id': workspaceId,
       },
-    })
+    }, 10000)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const color = data?.organization?.themeSettings?.primaryColor;
@@ -74,7 +75,7 @@ export default function CustomizationPage() {
 
     setSaving(true);
     try {
-      await fetch(`${API_BASE}/api/organizations/theme`, {
+      await fetchWithTimeout(`${API_BASE}/api/organizations/theme`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -82,7 +83,7 @@ export default function CustomizationPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ primaryColor: swatch.hex }),
-      });
+      }, 10000);
     } catch (e) {
       console.error('Failed to persist workspace accent:', e);
     } finally {
