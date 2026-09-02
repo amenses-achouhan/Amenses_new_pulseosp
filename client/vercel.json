@@ -22,7 +22,7 @@
 
   "headers": [
     {
-      "source": "/api/:path*",
+      "source": "/api/auth/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Credentials",
@@ -41,13 +41,6 @@
           "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
         }
       ]
-    }
-  ],
-
-  "rewrites": [
-    {
-      "source": "/api/auth/callback/:provider",
-      "destination": "/api/auth/callback/:provider"
     }
   ]
 }

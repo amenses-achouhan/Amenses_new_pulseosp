@@ -4,7 +4,9 @@
  */
 // Use the centralized API_BASE from lib/api.js for consistency.
 // This is a CommonJS file so we inline the same resolution logic.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE = typeof window === 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+  : '/api';
 
 const DASHBOARD_ENDPOINT = `${API_BASE}/api/analytics/dashboard`;
 const DEVELOPERS_ENDPOINT = `${API_BASE}/api/analytics/developers`;
