@@ -23,7 +23,7 @@ let scriptedResponses = []; // FIFO of results for successive generateContent ca
 let callCount = 0;
 
 class FakeModel {
-  async generateContent(prompt) {
+  async generateContent() {
     callCount++;
     const next = scriptedResponses.shift();
     if (!next) throw new Error('No scripted response');
@@ -82,7 +82,6 @@ async function runTests() {
   // T5-04 invalid Gemini key / transport error surfaces after retries
   scriptedResponses = []; // every call throws "No scripted response"
   let err = null;
-  const t0 = Date.now();
   try { await geminiService.generateSummary(CONTEXT, 'weekly'); } catch (e) { err = e; }
   check('T5-04 persistent failure throws', !!err, String(err && err.message));
 

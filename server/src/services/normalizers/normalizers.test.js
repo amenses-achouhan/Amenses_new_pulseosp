@@ -3,7 +3,6 @@
  *
  * Console-script pattern (no jest): run with `node server/src/services/normalizers/normalizers.test.js`.
  */
-const assert = require('assert');
 const { normalizeGithub } = require('./github');
 const { normalizeSlack } = require('./slack');
 const { normalizeJira } = require('./jira');

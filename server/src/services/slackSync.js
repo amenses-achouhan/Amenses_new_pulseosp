@@ -4,7 +4,7 @@ const SlackConversation = require('../models/SlackConversation');
 const SlackChannelMessage = require('../models/SlackChannelMessage');
 const SlackAttachment = require('../models/SlackAttachment');
 const SlackUser = require('../models/SlackUser');
-const { slackApi, typedSlackResult, isPermanentError, hasSlackScope, mapSlackErrorMessage, downloadPrivateFile } = require('./slackApi');
+const { slackApi, typedSlackResult, hasSlackScope, mapSlackErrorMessage, downloadPrivateFile } = require('./slackApi');
 const { uploadFileBuffer, categorizeFile } = require('./slackStorage');
 const { extractUrls } = require('./slackLinkPreview');
 
@@ -103,7 +103,7 @@ async function resolveUser(integration, userId, force = false) {
 }
 
 /** Build the normalized, AI-ready message document before upsert. */
-function normalizeMessage({ integration, organizationId, channelId, msg, source, parentMessageId }) {
+function normalizeMessage({ channelId, msg, source, parentMessageId }) {
   const threadTs = msg.thread_ts || null;
   const messageId = msg.ts;
 
@@ -170,9 +170,7 @@ async function upsertSlackMessage({ integration, organizationId, channelId, msg,
     resolvedUser = { displayName: msg.username, realName: '', avatarUrl: null, isBot: true };
   }
 
-  // The identity path (messageId) is unique-filtered in $setOnInsert; Mongo
-  // rejects the same path appearing in both $set and $setOnInsert of one update.
-  const { messageId: _identity, ...setFields } = normalizeMessage({
+  const setFields = normalizeMessage({
     integration,
     organizationId,
     channelId,

@@ -114,4 +114,4 @@ class SlackQueue {
 // server.js after DB connection so a live connection is guaranteed.
 const slackQueue = new SlackQueue({ concurrency: 3 });
 
-module.exports = { SlackQueue, slackQueue };
+module.exports = { slackQueue };

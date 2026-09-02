@@ -176,7 +176,7 @@ mock('services/githubClient', {
 
 // jira.service — mock all API calls, no real network
 const JiraServiceMock = {
-  async getIssues(token, cloudId, jql, nextPageToken, maxResults) {
+  async getIssues() {
     return {
       issues: [
         {
@@ -254,7 +254,6 @@ const { encrypt } = require('../utils/crypto');
 
 const integrationRoutes = require('../routes/integrationRoutes');
 const webhookRoutes     = require('../routes/webhooks/index');
-const { startProjectSync } = require('../services/jiraSync');
 const { startJiraWorker, stopJiraWorker } = require('../services/jiraEventsProcessor');
 
 // ---------------------------------------------------------------------------

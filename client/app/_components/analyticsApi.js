@@ -2,7 +2,9 @@
  * analyticsApi.js — client helpers for the analytics endpoints.
  * Same conventions as aiSummaryApi.js (plain CJS so Node tests can require it).
  */
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+// Use the centralized API_BASE from lib/api.js for consistency.
+// This is a CommonJS file so we inline the same resolution logic.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const DASHBOARD_ENDPOINT = `${API_BASE}/api/analytics/dashboard`;
 const DEVELOPERS_ENDPOINT = `${API_BASE}/api/analytics/developers`;

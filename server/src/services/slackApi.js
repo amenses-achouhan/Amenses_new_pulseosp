@@ -210,5 +210,4 @@ module.exports = {
   getConversationInfo,
   authTest,
   downloadPrivateFile,
-  SLACK_API,
 };

@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const PendingRegistration = require('../models/PendingRegistration');
 const PasswordReset = require('../models/PasswordReset');
-const Organization = require('../models/Organization');
 const OrganizationMember = require('../models/OrganizationMember');
 const Invitation = require('../models/Invitation');
 const authenticate = require('../middleware/authenticate');

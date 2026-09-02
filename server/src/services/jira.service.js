@@ -189,7 +189,7 @@ class JiraService {
     }
   }
 
-  async registerWebhook(accessToken, cloudId, webhookUrl, projectKey, secret) {
+  async registerWebhook(accessToken, cloudId, webhookUrl, projectKey) {
     try {
       // Jira Cloud REST API v3 — requires manage:jira-webhook OAuth 2.0 scope.
       // Supported Jira Cloud REST API v3 event IDs.

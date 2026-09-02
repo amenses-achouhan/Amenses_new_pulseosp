@@ -60,28 +60,6 @@ function pctChange(current, previous) {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-/**
- * Org Health Score (0-100). Weighted blend of delivery throughput, review
- * throughput vs intake, issue completion, collaboration volume and breadth.
- */
-function computeHealthScore({ prsMerged, prsOpened, issuesCompleted, issuesCreated, slackMessages, activeDevelopers }) {
-  const mergeRatio = prsOpened > 0 ? prsMerged / prsOpened : prsMerged > 0 ? 1 : 0;
-  const completionRatio = issuesCreated > 0 ? issuesCompleted / issuesCreated : issuesCompleted > 0 ? 1 : 0;
-
-  // Anchors tuned so a healthy small team (~10 merges/wk, ~5 devs, regular
-  // chat) lands around 70-85.
-  const throughput = Math.min(prsMerged / 10, 1);            // 30%
-  const review = Math.min(mergeRatio, 1);                     // 25%
-  const delivery = Math.min(completionRatio, 1);              // 20%
-  const collaboration = Math.min(slackMessages / 50, 1);      // 15%
-  const breadth = Math.min(activeDevelopers / 5, 1);          // 10%
-
-  const score = Math.round(
-    (throughput * 0.30 + review * 0.25 + delivery * 0.20 + collaboration * 0.15 + breadth * 0.10) * 100
-  );
-  return Math.max(0, Math.min(100, score));
-}
-
 // ---------------------------------------------------------------------------
 // GET /api/analytics/dashboard?days=7 — widgets for the Overview page
 // ---------------------------------------------------------------------------

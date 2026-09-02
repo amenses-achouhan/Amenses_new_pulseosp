@@ -17,8 +17,7 @@ const {
   postMessage,
 } = require('../services/slackClient');
 const JiraService = require('../services/jira.service');
-const JiraIssue = require('../models/JiraIssue');
-const { getSlackCallbackUrl, getJiraCallbackUrl, getGithubCallbackUrl, ensurePublicBackendUrl } = require('../utils/publicUrl');
+const { getSlackCallbackUrl, getJiraCallbackUrl, getGithubCallbackUrl } = require('../utils/publicUrl');
 
 const router = express.Router();
 
@@ -97,7 +96,7 @@ router.get('/github/callback', async (req, res) => {
   integration.state = undefined; // consumed
   await integration.save();
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL;
   res.redirect(
     `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=github`
   );
@@ -222,7 +221,7 @@ router.post(
         );
 
         const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
-        if (fullName && process.env.BACKEND_API_URL && webhookSecret) {
+        if (fullName && process.env.BACKEND_PUBLIC_URL && webhookSecret) {
           try {
             await githubRequest(`/repos/${fullName}/hooks`, integration, {
               method: 'POST',
@@ -231,7 +230,7 @@ router.post(
                 active: true,
                 events: ['push', 'pull_request'],
                 config: {
-                  url: `${process.env.BACKEND_API_URL}/api/webhooks/github`,
+                  url: `${process.env.BACKEND_PUBLIC_URL}/api/webhooks/github`,
                   content_type: 'json',
                   secret: webhookSecret,
                 },
@@ -241,7 +240,7 @@ router.post(
           } catch (hookErr) {
             results.push({ repoId, status: 'webhook_failed', error: hookErr.message });
           }
-        } else if (fullName && process.env.BACKEND_API_URL && !webhookSecret) {
+        } else if (fullName && process.env.BACKEND_PUBLIC_URL && !webhookSecret) {
           console.warn('[track-repos] GITHUB_WEBHOOK_SECRET not set — skipping webhook registration for', fullName);
           results.push({ repoId, status: 'tracked_no_webhook', reason: 'GITHUB_WEBHOOK_SECRET not configured' });
         } else {
@@ -552,7 +551,7 @@ router.get('/slack/callback', async (req, res) => {
   integration.state = undefined; // consumed — prevents replay of this callback
   await integration.save();
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL;
   res.redirect(
     `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=slack`
   );
@@ -641,8 +640,6 @@ router.post(
       if (!delivered) {
         return res.status(502).json({ error: 'Slack rejected the test message. Please reconnect Slack.' });
       }
-
-      return res.status(200).json({ success: true, message: 'Test message sent to Slack.' });
 
       return res.status(200).json({ success: true, message: 'Test message sent to Slack.' });
     } catch (err) {
@@ -848,9 +845,9 @@ router.get('/jira/callback', async (req, res) => {
 
     console.log('[jira/callback] Integration saved for org:', integration.organizationId, 'cloudId:', cloudId);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(
-      `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=jira`
+  const frontendUrl = process.env.FRONTEND_URL;
+  res.redirect(
+    `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=jira`
     );
   } catch (err) {
     console.error('[jira/callback] error:', err);
@@ -946,7 +943,7 @@ router.get(
         status: 'active',
       });
       if (integration) {
-        const publicBase = (process.env.BACKEND_API_URL || '').replace(/\/$/, '');
+        const publicBase = (process.env.BACKEND_PUBLIC_URL || '').replace(/\/$/, '');
         // Scope-health check (Check #1): a token issued before
         // manage:jira-webhook was added to the app will never gain the scope,
         // even though the app config shows it. Surface that staleness here so
@@ -1251,7 +1248,7 @@ router.post(
         throw preErr;
       }
 
-      const webhookUrl = `${process.env.BACKEND_API_URL || 'http://localhost:5000'}/api/webhooks/jira`;
+      const webhookUrl = `${process.env.BACKEND_PUBLIC_URL || 'http://localhost:5000'}/api/webhooks/jira`;
 
       // If we already have a webhook ID, verify it remotely
       if (integration.jiraWebhookId) {

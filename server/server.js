@@ -29,13 +29,17 @@ app.use(securityHeaders);
 
 // Dynamic CORS allowlist.
 // - Requests with no Origin (curl, server-to-server NextAuth → Express) pass.
-// - Production: only env-configured origins (FRONTEND_URL, CLIENT_URL, ALLOWED_ORIGIN).
+// - Production: only FRONTEND_URL (single source of truth for the frontend origin).
 // - Development: also allow localhost origins for the Next.js dev server.
-const productionOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.CLIENT_URL,
-  process.env.ALLOWED_ORIGIN,
-].filter(Boolean);
+//
+// IMPORTANT: FRONTEND_URL must exactly match what the browser sends as Origin.
+// No trailing slash. Must be https:// in production.
+const frontendUrl = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null;
+
+if (process.env.NODE_ENV === 'production' && !frontendUrl) {
+  console.error('[cors] ⚠️  FRONTEND_URL is not set. CORS will block ALL browser requests.');
+  console.error('[cors]    Set FRONTEND_URL=https://your-frontend-domain.com in server/.env');
+}
 
 const devOrigins = [
   'http://localhost:3000',
@@ -47,8 +51,8 @@ const devOrigins = [
 ];
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? productionOrigins
-  : [...devOrigins, ...productionOrigins];
+  ? (frontendUrl ? [frontendUrl] : [])
+  : [...devOrigins, ...(frontendUrl ? [frontendUrl] : [])];
 
 if (process.env.NODE_ENV === 'production') {
   console.log('[cors] Production allowed origins:', allowedOrigins);
@@ -160,6 +164,18 @@ const startServer = async () => {
   // and OAuth redirect_uris are built from the live tunnel, not stale env.
   const publicUrl = await ensurePublicBackendUrl();
 
+  // Startup validation: ensure critical env vars are set in production.
+  if (process.env.NODE_ENV === 'production') {
+    const missing = [];
+    if (!process.env.FRONTEND_URL) missing.push('FRONTEND_URL');
+    if (!process.env.BACKEND_PUBLIC_URL) missing.push('BACKEND_PUBLIC_URL');
+    if (!process.env.JWT_SECRET) missing.push('JWT_SECRET');
+    if (missing.length > 0) {
+      console.error(`[startup] ⚠️  Missing required env vars: ${missing.join(', ')}`);
+      console.error('[startup]    CORS and OAuth will not work correctly without these.');
+    }
+  }
+
   await connectDB();
   startSlackWorker();
   startJiraWorker();
@@ -178,11 +194,10 @@ const startServer = async () => {
     if (slackCallback && slackCallback.includes('localhost')) {
       console.warn('⚠️  Slack callback is localhost — Slack cannot reach it over the internet.');
       console.warn('   Run `npm run dev:tunnel` or start ngrok (`ngrok http 5000`) and restart the server.');
-      console.warn('   Or set NGROK_STATIC_DOMAIN=<your-reserved-domain> in server/.env for a stable URL.');
+      console.warn('   Or set BACKEND_PUBLIC_URL=<your-public-url> in server/.env for a stable URL.');
       console.warn('   After a hostname change, paste the callback above into: Slack App → OAuth & Permissions → Redirect URLs');
       console.warn('   Direct link: https://api.slack.com/apps → Your App → OAuth & Permissions');
     } else if (slackCallback && slackCallback.includes('ngrok')) {
-      const host = new URL(slackCallback).host;
       console.log(`👉 If this ngrok host changed since last run, paste ${slackCallback} into Slack dashboard → OAuth & Permissions → Redirect URLs`);
       console.log(`   https://api.slack.com/apps → Your App → OAuth & Permissions (add & Save URLs)`);
     }

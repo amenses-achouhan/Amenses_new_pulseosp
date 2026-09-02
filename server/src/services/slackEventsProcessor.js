@@ -4,7 +4,6 @@ const Integration = require('../models/Integration');
 const SlackEvent = require('../models/SlackEvent');
 const SlackConversation = require('../models/SlackConversation');
 const SlackChannelMessage = require('../models/SlackChannelMessage');
-const SlackAttachment = require('../models/SlackAttachment');
 const SlackLink = require('../models/SlackLink');
 const { slackQueue } = require('./slackQueue');
 const {
@@ -196,7 +195,13 @@ async function handleMessageEvent({ integration, organizationId, event }) {
   // file_shared-style events embed candidate file ids; schedule dedicated jobs.
   if (Array.isArray(event.files) && event.files.length > 0) {
     for (const f of event.files) {
-      await enqueueFileJob({ integration, organizationId, channelId, file: f, messageId: saved.messageId });
+      await enqueueFileJob({
+        integrationId: integration._id.toString(),
+        organizationId,
+        channelId,
+        file: f,
+        messageId: saved.messageId,
+      });
     }
   }
 
@@ -205,7 +210,14 @@ async function handleMessageEvent({ integration, organizationId, event }) {
     text: event.text,
     messageId: saved && saved.messageId,
     channelId,
-    enqueueLink: ({ url }) => enqueueLinkJob({ integration, organizationId, channelId, messageId: saved.messageId, urls: url }),
+    enqueueLink: ({ url }) =>
+      enqueueLinkJob({
+        integrationId: integration._id.toString(),
+        organizationId,
+        channelId,
+        messageId: saved.messageId,
+        urls: url,
+      }),
   });
 
   return { dropped: false, action: 'created', messageId: saved && saved.messageId };
@@ -215,11 +227,17 @@ async function handleFileShared({ integration, organizationId, event }) {
   const channelId = event.channel_id || event.channel || null;
   // files.info links the file to its message via `associated_message_id`.
   const job = { file: { id: event.file_id }, messageId: event.file_id };
-  await enqueueFileJob({ integration, organizationId, channelId, file: job.file, messageId: job.messageId });
+  await enqueueFileJob({
+    integrationId: integration._id.toString(),
+    organizationId,
+    channelId,
+    file: job.file,
+    messageId: job.messageId,
+  });
   return { dropped: false, action: 'file_shared_enqueued', fileId: event.file_id };
 }
 
-async function handleReactionEvent({ integration, organizationId, event }) {
+async function handleReactionEvent({ organizationId, event }) {
   const item = event.item || {};
   const channelId = item.channel || null;
   const messageId = item.ts || null;
@@ -260,19 +278,19 @@ async function handleReactionEvent({ integration, organizationId, event }) {
   return { dropped: false, action: event.type, messageId };
 }
 
-async function enqueueFileJob({ integration, organizationId, channelId, file, messageId }) {
+async function enqueueFileJob({ integrationId, organizationId, channelId, file, messageId }) {
   await slackQueue.add(
     'slack_sync_file',
-    { organizationId, integrationId: integration._id.toString(), conversationId: channelId, file, messageId },
+    { organizationId, integrationId, conversationId: channelId, file, messageId },
     { attempts: 3 }
   );
 }
 
-function enqueueLinkJob({ integration, organizationId, channelId, messageId, urls }) {
+function enqueueLinkJob({ integrationId, organizationId, channelId, messageId, urls }) {
   for (const url of urls || []) {
     slackQueue.add(
       'slack_link_preview',
-      { organizationId, integrationId: integration._id.toString(), conversationId: channelId, messageId, url },
+      { organizationId, integrationId, conversationId: channelId, messageId, url },
       { attempts: 3 }
     );
   }

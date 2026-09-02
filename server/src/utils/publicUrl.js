@@ -39,14 +39,7 @@ function getPublicBackendUrl() {
     return cachedUrl;
   }
 
-  const staticDomain = normalize(process.env.NGROK_STATIC_DOMAIN);
-  if (staticDomain) {
-    // Allow user to pass either "my-domain.ngrok-free.app" or full "https://..."
-    cachedUrl = staticDomain.startsWith('http') ? staticDomain.replace(/\/$/, '') : `https://${staticDomain}`;
-    cachedAt = Date.now();
-    return cachedUrl;
-  }
-
+  // Single source of truth: BACKEND_PUBLIC_URL.
   const explicitUrl = normalize(process.env.BACKEND_PUBLIC_URL);
   if (explicitUrl) {
     cachedUrl = explicitUrl;
@@ -54,18 +47,10 @@ function getPublicBackendUrl() {
     return cachedUrl;
   }
 
-  // Also support legacy BACKEND_API_URL / API_URL for backward compat
-  const legacyUrl = normalize(process.env.BACKEND_API_URL || process.env.API_URL);
-  if (legacyUrl && legacyUrl.startsWith('http')) {
-    cachedUrl = legacyUrl;
-    cachedAt = Date.now();
-    return cachedUrl;
-  }
-
   if (process.env.NODE_ENV !== 'production') {
     // Dev fallback: use localhost so routes don't 503. Slack/Jira OAuth will still
     // require a public URL — we warn clearly so the developer knows to start ngrok
-    // or set NGROK_STATIC_DOMAIN / BACKEND_PUBLIC_URL.
+    // or set BACKEND_PUBLIC_URL.
     const port = process.env.PORT || 5000;
     const fallback = `http://localhost:${port}`;
     // Cache fallback briefly but allow ensurePublicBackendUrl to override it quickly
@@ -79,7 +64,7 @@ function getPublicBackendUrl() {
 
 async function ensurePublicBackendUrl() {
   // Fast path: explicit config already resolved
-  const existing = normalize(process.env.BACKEND_PUBLIC_URL) || normalize(process.env.NGROK_STATIC_DOMAIN ? `https://${String(process.env.NGROK_STATIC_DOMAIN).trim().replace(/^https?:\/\//, '')}` : null) || normalize(process.env.BACKEND_API_URL || process.env.API_URL);
+  const existing = normalize(process.env.BACKEND_PUBLIC_URL);
   if (existing) {
     // Populate cache via getPublicBackendUrl
     getPublicBackendUrl();
@@ -87,7 +72,8 @@ async function ensurePublicBackendUrl() {
   }
 
   if (process.env.NODE_ENV === 'production') {
-    console.error('[publicUrl] BACKEND_PUBLIC_URL must be set in production');
+    console.error('[publicUrl] ⚠️  BACKEND_PUBLIC_URL must be set in production.');
+    console.error('[publicUrl]    OAuth callbacks and webhooks will not work without it.');
     return null;
   }
 
@@ -103,15 +89,15 @@ async function ensurePublicBackendUrl() {
   }
 
   // No tunnel found — fall back to localhost but warn that Slack callbacks will not
-  // be reachable from Slack's servers until ngrok is started or a static domain is set.
+  // be reachable from Slack's servers until ngrok is started or BACKEND_PUBLIC_URL is set.
   const port = process.env.PORT || 5000;
   const fallback = `http://localhost:${port}`;
   cachedUrl = fallback;
   cachedAt = Date.now();
   // Do NOT set process.env.BACKEND_PUBLIC_URL to fallback — keep it empty so a later
   // ngrok start can be detected without restart (clearCache + retry).
-  console.warn(`[publicUrl] No ngrok tunnel found at ${process.env.NGROK_API_URL || 'http://127.0.0.1:4040/api/tunnels'}. Falling back to ${fallback}.`);
-  console.warn(`[publicUrl] Slack/Jira OAuth will fail over the public internet until ngrok is running. Run: npm run dev:tunnel  OR  ngrok http ${port}  OR set NGROK_STATIC_DOMAIN in server/.env`);
+  console.warn(`[publicUrl] No ngrok tunnel found. Falling back to ${fallback}.`);
+  console.warn(`[publicUrl] Slack/Jira OAuth will fail over the public internet. Run: npm run dev:tunnel  OR  ngrok http ${port}  OR set BACKEND_PUBLIC_URL in server/.env`);
   return fallback;
 }
 

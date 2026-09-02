@@ -4,9 +4,7 @@ const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const User = require('./src/models/User');
 const Organization = require('./src/models/Organization');
-const OrganizationMember = require('./src/models/OrganizationMember');
 const Invitation = require('./src/models/Invitation');
 const { hasPermission } = require('./src/config/permissions');
 

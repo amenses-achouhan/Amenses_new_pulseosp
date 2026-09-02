@@ -44,7 +44,7 @@ const MockActivity = {
     this.created.push(payload);
     return Promise.resolve({ _id: `mock_${this.created.length}`, ...payload });
   },
-  findOneAndUpdate(query, update, options) {
+  findOneAndUpdate(query, update) {
     const payload = update.$set;
     this.created.push(payload);
     return Promise.resolve({ _id: `mock_${this.created.length}`, ...payload });

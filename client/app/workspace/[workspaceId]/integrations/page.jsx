@@ -597,8 +597,8 @@ function JiraPanel({ workspaceId, token }) {
 
   const headers = { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId };
   const [webhookUrl, setWebhookUrl] = useState(
-    process.env.NEXT_PUBLIC_BACKEND_URL
-      ? `${process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/$/, '')}/api/webhooks/jira`
+    process.env.NEXT_PUBLIC_API_URL
+      ? `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '')}/api/webhooks/jira`
       : ''
   );
 

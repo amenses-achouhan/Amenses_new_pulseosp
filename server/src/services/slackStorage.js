@@ -40,7 +40,7 @@ async function saveToLocal({
   const filePath = path.join(dir, `${stamp}-${safeName}`);
   fs.writeFileSync(filePath, buffer);
 
-  const publicBase = process.env.BACKEND_PUBLIC_URL || 'http://localhost:5000';
+  const publicBase = process.env.BACKEND_PUBLIC_URL;
   const uriPath = `/uploads/slack/${safeOrg}/${safeChannel}/${path.basename(filePath)}`;
   return { storageUrl: `${publicBase}${uriPath}`, storageType: 'local', filePath };
 }
@@ -48,9 +48,11 @@ async function saveToLocal({
 /** Optional S3 adapter — used only when the SDK is resolvable + configured. */
 async function saveToS3({ organizationId, channelId, fileName, buffer, fileType }) {
   // Lazy require so an unconfigured environment never fails on the import.
-  let S3Client;
+  let S3Client, PutObjectCommand;
   try {
-    ({ S3Client, PutObjectCommand } = require('@aws-sdk/client-s3'));
+    const AWS = require('@aws-sdk/client-s3');
+    S3Client = AWS.S3Client;
+    PutObjectCommand = AWS.PutObjectCommand;
   } catch {
     return null;
   }

@@ -13,7 +13,9 @@
  *
  * Without the token the requests return 401 "Authentication required".
  */
-const API_BASE = process.env.NEXT_PUBLIC_EXPRESS_API_URL || 'http://localhost:5000';
+// Use the centralized API_BASE from lib/api.js for consistency.
+// This is a CommonJS file so we inline the same resolution logic.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 const LATEST_ENDPOINT = `${API_BASE}/api/ai-summaries/latest`;
 const GENERATE_ENDPOINT = `${API_BASE}/api/ai-summaries`;

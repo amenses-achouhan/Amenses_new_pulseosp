@@ -22,7 +22,6 @@ function computeDeterministicHealthScore({
   issuesCompleted = 0,
   issuesCreated = 0,
   slackMessages = 0,
-  activeDevelopers = 0,
   staleTickets = 0,
   zeroActivityDays = 0,
 }) {

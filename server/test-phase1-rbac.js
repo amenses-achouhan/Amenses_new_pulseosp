@@ -6,7 +6,7 @@
  * 3. Express middleware `requirePermission` 403 enforcement.
  */
 
-const { hasPermission, ROLE_PERMISSIONS, PERMISSIONS } = require('./src/config/permissions');
+const { hasPermission } = require('./src/config/permissions');
 const requirePermission = require('./src/middleware/requirePermission');
 
 function runRbacTests() {

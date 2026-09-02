@@ -23,7 +23,7 @@ const mongoose = require('mongoose');
 
 // Pick your org (default = demo workspace). Override with --org or MY_ORG_ID.
 const ORG_ID = process.env.MY_ORG_ID || '6a8b2ad0cbaddd12cb32dc51';
-const BASE = (process.env.BACKEND_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const BASE = (process.env.BACKEND_PUBLIC_URL || 'http://localhost:5000').replace(/\/$/, '');
 
 // ---- helpers ---------------------------------------------------------------
 let passed = 0, failed = 0;
@@ -49,6 +49,7 @@ async function json(url, opts = {}) {
     const reader = res.body.getReader();
     const chunks = [];
     let total = 0;
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;

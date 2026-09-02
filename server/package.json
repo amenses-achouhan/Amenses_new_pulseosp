@@ -4,8 +4,10 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
+    "build": "eslint . --ext .js --max-warnings 0",
     "start": "node server.js",
     "test": "node scripts/run-tests.js",
+    "lint": "eslint . --ext .js",
     "dev:tunnel": "node scripts/dev-tunnel.js"
   },
   "dependencies": {

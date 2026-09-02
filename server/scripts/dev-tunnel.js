@@ -36,7 +36,9 @@ async function fetchTunnel(maxMs) {
         const t = tunnels.find(x => x.proto === 'https' && x.public_url) || tunnels.find(x => x.public_url);
         if (t?.public_url) return t.public_url.replace(/\/$/, '');
       }
-    } catch {}
+    } catch {
+      // ignore fetch/parse errors, retry
+    }
     await sleep(NGROK_POLL_INTERVAL);
   }
   return null;
@@ -99,7 +101,7 @@ async function main() {
   console.log(`[dev:tunnel] If host changed, paste it into https://api.slack.com/apps → OAuth & Permissions → Redirect URLs`);
   if (ngrokProc) {
     // Ensure ngrok is killed when this script exits
-    const cleanup = () => { try { ngrokProc.kill(); } catch {} };
+    const cleanup = () => { try { ngrokProc.kill(); } catch { /* already exited */ } };
     process.on('exit', cleanup);
     process.on('SIGINT', () => { cleanup(); process.exit(0); });
     process.on('SIGTERM', cleanup);
@@ -125,7 +127,7 @@ function startServer(tunnelUrl) {
     process.exit(1);
   });
 
-  const shutdown = () => { try { server.kill('SIGTERM'); } catch {} };
+  const shutdown = () => { try { server.kill('SIGTERM'); } catch { /* already exited */ } };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 }

@@ -24,7 +24,6 @@ async function injectTestData() {
     console.log('✅ Cleared old test data');
 
     const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
     const minutesAgo = (m) => new Date(now - m * 60 * 1000);
 
     // Create test activities matching the Activity model schema

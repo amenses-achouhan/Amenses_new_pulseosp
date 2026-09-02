@@ -5,7 +5,6 @@ const verifyTenantAccess = require('../middleware/verifyTenantAccess');
 const SlackConversation = require('../models/SlackConversation');
 const SlackChannelMessage = require('../models/SlackChannelMessage');
 const SlackAttachment = require('../models/SlackAttachment');
-const SlackLink = require('../models/SlackLink');
 const Integration = require('../models/Integration');
 const realtime = require('../services/slackRealtime');
 
@@ -228,7 +227,6 @@ router.get('/conversations/:conversationId/messages', async (req, res) => {
  */
 router.get('/conversations/:conversationId/stream', (req, res) => {
   const { conversationId } = req.params;
-  const organizationId = req.organizationId;
 
   res.status(200).set({
     'Content-Type': 'text/event-stream',

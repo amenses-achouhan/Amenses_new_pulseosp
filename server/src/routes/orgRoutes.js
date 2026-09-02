@@ -236,7 +236,7 @@ async function handleInvite(req, res) {
 
     const org = await Organization.findById(req.organizationId);
     const orgName = org ? org.name : 'Organization';
-    const frontendUrl = process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL;
     const inviteUrl = `${frontendUrl}/login?orgEmail=${encodeURIComponent(recipientEmail)}&inviteToken=${rawToken}`;
 
     try {
