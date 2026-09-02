@@ -17,7 +17,7 @@
 // This is a CommonJS file so we inline the same resolution logic.
 const API_BASE = typeof window === 'undefined'
   ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
-  : '/api';
+  : '';
 
 const LATEST_ENDPOINT = `${API_BASE}/api/ai-summaries/latest`;
 const GENERATE_ENDPOINT = `${API_BASE}/api/ai-summaries`;
