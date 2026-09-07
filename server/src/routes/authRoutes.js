@@ -782,11 +782,11 @@ router.post('/login', authRateLimiter, async (req, res) => {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
     } else if (inviteOtp && inviteToken) {
-      // OTP-based invitation acceptance. Newly invited accounts are created
-      // WITHOUT a password (see orgRoutes handleInvite), so the 6-digit code
-      // from the invite email is the proof of email ownership that authenticates
-      // this one acceptance. The invitation is matched by its (hashed) token,
-      // the OTP by its SHA-256 hash — the plaintext code is never stored.
+      // OTP-based invitation acceptance — works for BOTH new and existing users.
+      // The 6-digit code from the invite email is the sole proof of email
+      // ownership needed to accept. No password is required or checked.
+      // The invitation is matched by its (hashed) token; the OTP by its
+      // SHA-256 hash — the plaintext code is never stored.
       const tokenHash = sha256(inviteToken);
       const invitation = await Invitation.findOne({
         tokenHash,

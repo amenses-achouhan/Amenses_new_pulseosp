@@ -288,52 +288,56 @@ function LoginInner() {
               <div className="inline-flex items-center gap-1.5 mb-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 inline-block"></span>
                 <span className="text-[11px] font-bold tracking-widest text-indigo-600 uppercase">
-                  WELCOME BACK
+                  {inviteToken ? 'INVITATION' : 'WELCOME BACK'}
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Sign in to PulseOps.
+                {inviteToken ? 'Accept Your Invitation' : 'Sign in to PulseOps.'}
               </h1>
               <p className="mt-2 text-xs sm:text-sm text-slate-500">
-                {locked
+                {inviteToken
+                  ? 'Enter the 6-digit code from your invitation email.'
+                  : locked
                   ? 'Locked to your organization invitation'
                   : 'Enter your credentials to access your workspace.'}
               </p>
             </div>
 
-            {/* Tab switcher: Credentials vs Single sign-on */}
-            <div
-              role="tablist"
-              aria-label="Sign-in method"
-              className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100/80 p-1"
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={tab === 'credentials'}
-                onClick={() => setTab('credentials')}
-                className={`rounded-lg px-3 py-2 text-xs sm:text-sm transition-all ${tab === 'credentials'
-                    ? 'bg-white font-bold text-slate-900 shadow-sm'
-                    : 'font-medium text-slate-500 hover:text-slate-900'
-                  }`}
+            {/* Tab switcher: hide when accepting an invite (OTP-only flow) */}
+            {!inviteToken && (
+              <div
+                role="tablist"
+                aria-label="Sign-in method"
+                className="mb-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100/80 p-1"
               >
-                Email &amp; password
-              </button>
-              {!locked && (
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={tab === 'oauth'}
-                  onClick={() => setTab('oauth')}
-                  className={`rounded-lg px-3 py-2 text-xs sm:text-sm transition-all ${tab === 'oauth'
+                  aria-selected={tab === 'credentials'}
+                  onClick={() => setTab('credentials')}
+                  className={`rounded-lg px-3 py-2 text-xs sm:text-sm transition-all ${tab === 'credentials'
                       ? 'bg-white font-bold text-slate-900 shadow-sm'
                       : 'font-medium text-slate-500 hover:text-slate-900'
                     }`}
                 >
-                  Single sign-on
+                  Email &amp; password
                 </button>
-              )}
-            </div>
+                {!locked && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === 'oauth'}
+                    onClick={() => setTab('oauth')}
+                    className={`rounded-lg px-3 py-2 text-xs sm:text-sm transition-all ${tab === 'oauth'
+                        ? 'bg-white font-bold text-slate-900 shadow-sm'
+                        : 'font-medium text-slate-500 hover:text-slate-900'
+                      }`}
+                  >
+                    Single sign-on
+                  </button>
+                )}
+              </div>
+            )}
 
             {oauthErrorParam && <NextAuthErrorBanner code={oauthErrorParam} />}
             {verified && !error && (
@@ -383,7 +387,8 @@ function LoginInner() {
                   </p>
                 )}
 
-                {locked && inviteToken && (
+                {/* OTP field — shown when coming via invite link */}
+                {inviteToken && (
                   <>
                     <div className="relative">
                       <input
@@ -394,53 +399,59 @@ function LoginInner() {
                         pattern="[0-9]*"
                         maxLength={6}
                         autoComplete="one-time-code"
+                        autoFocus
                         value={inviteOtp}
                         placeholder=" "
                         onChange={(e) => setInviteOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className={FLOAT_INPUT}
                       />
                       <label htmlFor="login-invite-otp" className={FLOAT_LABEL}>
-                        Invitation Code
+                        6-Digit Invitation Code
                       </label>
                     </div>
-                    <p className="mt-1.5 text-xs text-indigo-600">
-                      New to PulseOps? Enter the 6-digit code from your invite
-                      email instead of a password.
+                    <p className="-mt-2 text-xs text-indigo-600">
+                      Check your email for the 6-digit code and enter it above.
                     </p>
                   </>
                 )}
 
-                <div className="relative">
-                  <input
-                    id="login-password"
-                    type="password"
-                    name="password"
-                    autoComplete="current-password"
-                    value={password}
-                    placeholder=" "
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={FLOAT_INPUT}
-                  />
-                  <label htmlFor="login-password" className={FLOAT_LABEL}>
-                    Password
-                  </label>
-                </div>
-
-                <div className="flex justify-end pt-0.5">
-                  <a
-                    href="/forgot-password"
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline-offset-2 hover:underline"
-                  >
-                    Forgot password?
-                  </a>
-                </div>
+                {/* Password field — hidden when accepting an invite */}
+                {!inviteToken && (
+                  <>
+                    <div className="relative">
+                      <input
+                        id="login-password"
+                        type="password"
+                        name="password"
+                        autoComplete="current-password"
+                        value={password}
+                        placeholder=" "
+                        onChange={(e) => setPassword(e.target.value)}
+                        className={FLOAT_INPUT}
+                      />
+                      <label htmlFor="login-password" className={FLOAT_LABEL}>
+                        Password
+                      </label>
+                    </div>
+                    <div className="flex justify-end pt-0.5">
+                      <a
+                        href="/forgot-password"
+                        className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 underline-offset-2 hover:underline"
+                      >
+                        Forgot password?
+                      </a>
+                    </div>
+                  </>
+                )}
 
                 <button
                   type="submit"
                   disabled={busy}
                   className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm px-4 py-3 transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2"
                 >
-                  {busy ? 'Signing in…' : 'Sign In'}
+                  {busy
+                    ? inviteToken ? 'Verifying…' : 'Signing in…'
+                    : inviteToken ? 'Accept Invitation' : 'Sign In'}
                 </button>
               </form>
             ) : (

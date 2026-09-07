@@ -223,18 +223,15 @@ async function handleInvite(req, res) {
       });
     }
 
-    // Existing accounts are NEVER touched: overwriting an invitee's password
-    // silently locks them out of their own account. They sign in with their
-    // existing credentials and the invite token attaches the membership.
-    //
-    // Brand-new accounts use OTP-based acceptance: a 6-digit code (only its
-    // SHA-256 hash is stored) is emailed, and the account is created WITHOUT a
-    // password. Proving ownership of the invited email via the code attaches
-    // the membership; the invitee then sets their own password on first login.
-    // No plaintext temporary password is ever sent over email.
+    // ALL invitations (new AND existing users) use OTP-based acceptance.
+    // A 6-digit code is generated, its SHA-256 hash stored in the Invitation
+    // record, and the plaintext code is emailed. The invitee enters it on the
+    // login page — no password required. For existing users this is a one-time
+    // acceptance gate; their password is never touched or overwritten.
     const existingUser = await User.findOne({ email: recipientEmail });
     const isNewUser = !existingUser;
-    const inviteOtp = isNewUser ? crypto.randomInt(100000, 1000000).toString() : null;
+    // Always generate a fresh 6-digit OTP — used for both new and existing accounts.
+    const inviteOtp = crypto.randomInt(100000, 1000000).toString();
 
     if (existingUser) {
       // An admin vouched for this address, so an unverified account (e.g. a
@@ -275,9 +272,10 @@ async function handleInvite(req, res) {
           tokenHash,
           expiresAt,
           status: 'pending',
-          ...(isNewUser
-            ? { otpHash: sha256(inviteOtp), otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000) }
-            : { otpHash: null, otpExpiresAt: null }),
+          // Always store a fresh OTP hash — used by ALL invitees regardless of
+          // whether they already have an account. Expires in 10 minutes.
+          otpHash: sha256(inviteOtp),
+          otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
       },
       { upsert: true, new: true }
@@ -288,38 +286,31 @@ async function handleInvite(req, res) {
     const frontendUrl = process.env.FRONTEND_URL;
     const inviteUrl = `${frontendUrl}/login?orgEmail=${encodeURIComponent(recipientEmail)}&inviteToken=${rawToken}`;
 
-    // Fire-and-forget email — don't block the HTTP response on SMTP delivery.
-    // This prevents SMTP timeouts (common with Gmail on cloud platforms) from
-    // making the API call hang until the client's fetch timeout aborts.
-    const emailPayload = isNewUser
-      ? {
-          to: recipientEmail,
-          subject: `You are invited to join ${orgName} on PulseOps`,
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:auto">
-              <h2 style="color:#4f46e5">You've been invited to ${orgName}</h2>
-              <p>You have been invited to join <strong>${orgName}</strong> on PulseOps as a <strong>${role}</strong>.</p>
-              <p style="margin:16px 0">Your invitation code is:</p>
-              <div style="background:#f1f5f9;border-radius:8px;padding:12px 20px;font-size:24px;font-family:monospace;letter-spacing:6px;font-weight:bold">${inviteOtp}</div>
-              <p style="margin-top:16px">It expires in 10 minutes. Open the link below and enter this code to accept your invitation and set your own password.</p>
-              <a href="${inviteUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Accept Invitation</a>
-              <p style="margin-top:24px;font-size:12px;color:#6b7280">Or paste this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
-            </div>`,
-          text: `You've been invited to ${orgName} on PulseOps.\n\nEmail: ${recipientEmail}\nInvitation Code: ${inviteOtp} (expires in 10 minutes)\n\nLogin Link: ${inviteUrl}`,
-        }
-      : {
-          to: recipientEmail,
-          subject: `You've been invited to join ${orgName} on PulseOps`,
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:auto">
-              <h2 style="color:#4f46e5">You've been invited to ${orgName}</h2>
-              <p>You have been invited to join <strong>${orgName}</strong> on PulseOps as a <strong>${role}</strong>.</p>
-              <p style="margin-top:16px">Click the button below and sign in with your existing PulseOps password to accept.</p>
-              <a href="${inviteUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Accept Invitation</a>
-              <p style="margin-top:24px;font-size:12px;color:#6b7280">Or paste this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
-            </div>`,
-          text: `You've been invited to ${orgName} on PulseOps.\n\nEmail: ${recipientEmail}\n\nLogin Link: ${inviteUrl}`,
-        };
+    // Unified invitation email — same template for new AND existing users.
+    // The 6-digit OTP is shown prominently so the invitee can copy-paste it.
+    const emailPayload = {
+      to: recipientEmail,
+      subject: `You've been invited to join ${orgName} on PulseOps`,
+      html: `
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:520px;margin:auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
+          <div style="background:#4f46e5;padding:32px 40px">
+            <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff">You've been invited to ${orgName}</h1>
+          </div>
+          <div style="padding:32px 40px">
+            <p style="margin:0 0 16px;color:#374151;font-size:15px">
+              You have been invited to join <strong>${orgName}</strong> on PulseOps as a <strong style="color:#4f46e5">${role}</strong>.
+            </p>
+            <p style="margin:0 0 12px;color:#374151;font-size:15px">Your one-time invitation code is:</p>
+            <div style="background:#f8fafc;border:2px solid #4f46e5;border-radius:10px;padding:20px 24px;text-align:center;margin:0 0 20px">
+              <span style="font-size:36px;font-family:monospace;font-weight:900;letter-spacing:12px;color:#1e1b4b;display:inline-block">${inviteOtp}</span>
+            </div>
+            <p style="margin:0 0 24px;color:#6b7280;font-size:13px">⏱ This code expires in <strong>10 minutes</strong>. Click the button below, then enter this code on the sign-in page to accept your invitation.</p>
+            <a href="${inviteUrl}" style="display:inline-block;padding:13px 28px;background:#4f46e5;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px">Accept Invitation →</a>
+            <p style="margin:24px 0 0;font-size:12px;color:#9ca3af">Or paste this link in your browser:<br/><a href="${inviteUrl}" style="color:#4f46e5;word-break:break-all">${inviteUrl}</a></p>
+          </div>
+        </div>`,
+      text: `You've been invited to ${orgName} on PulseOps as ${role}.\n\nYour invitation code: ${inviteOtp}\n(expires in 10 minutes)\n\nClick to accept: ${inviteUrl}\n\nOr open the link and enter the code when prompted.`,
+    };
 
     let emailSent = false;
     try {
@@ -338,7 +329,9 @@ async function handleInvite(req, res) {
     return res.status(200).json({
       success: true,
       inviteUrl,
-      ...(isNewUser ? { inviteOtp } : {}),
+      // Always return the OTP so the admin UI can show it as a manual fallback
+      // if email delivery fails (or for testing). Never log it server-side.
+      inviteOtp,
       existingUser: !isNewUser,
       orgEmail: recipientEmail,
       emailSent,
