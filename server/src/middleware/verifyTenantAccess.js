@@ -1,4 +1,5 @@
 const OrganizationMember = require('../models/OrganizationMember');
+const mongoose = require('mongoose');
 
 /**
  * Tenant-scoping guard. Derives the target organization from (in priority
@@ -11,6 +12,12 @@ const OrganizationMember = require('../models/OrganizationMember');
  * resolved organization.
  */
 const verifyTenantAccess = async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      message: 'Service temporarily unavailable. Please try again in a moment.',
+    });
+  }
+
   const targetOrgId =
     (req.params && req.params.organizationId) ||
     (req.params && req.params.workspaceId) ||

@@ -118,6 +118,62 @@ function clearCache() {
   cachedAt = 0;
 }
 
+// ---------------------------------------------------------------------------
+// Frontend origin resolution (RC-1 — post-OAuth redirect session preservation)
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalize a URL to its bare origin (scheme + host + port).
+ * Returns null for anything that is not http(s) or is unparseable, or that
+ * embeds credentials (user:pass@host) — never redirect to such a URL.
+ */
+function normalizeOrigin(value) {
+  if (!value || typeof value !== 'string') return null;
+  try {
+    const u = new URL(value.trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    if (u.username || u.password) return null;
+    return u.origin;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve the frontend origin the browser session actually belongs to.
+ *
+ * The integration OAuth callbacks run UNAUTHENTICATED (the browser arrives
+ * fresh from the provider), so the final redirect must land on the same origin
+ * the user initiated the connect from — otherwise the NextAuth session cookie
+ * is not sent with the landing request and the auth guard bounces the user to
+ * the sign-in page (the reported production bug).
+ *
+ * Candidate sources, in order:
+ *   1. `x-frontend-origin` — sent explicitly by our own client code. Works in
+ *      every topology: same-origin GETs behind the Vercel rewrite proxy send
+ *      no Origin/Referer guarantees, but the browser always knows its origin.
+ *   2. `Origin` — present on cross-origin browser requests.
+ *   3. `Referer` — present on same-origin browser requests proxied to Render.
+ *   4. FRONTEND_URL — canonical fallback for non-browser callers.
+ *
+ * NOTE on trust: sources 1–3 are client-supplied. An authenticated user could
+ * redirect the return hop of THEIR OWN OAuth grant to an arbitrary origin;
+ * the impact is limited to that user's own browser (no tokens or other users'
+ * data travel in the redirect). The alternative — trusting only FRONTEND_URL —
+ * is exactly what breaks production when that env var is stale or misspelled
+ * (the historical pulseops/pulseosp mismatch), so we prefer the browser's
+ * actual origin and keep FRONTEND_URL as the fallback.
+ */
+function resolveFrontendOrigin(req) {
+  if (req && typeof req.get === 'function') {
+    for (const header of ['x-frontend-origin', 'origin', 'referer']) {
+      const origin = normalizeOrigin(req.get(header));
+      if (origin) return origin;
+    }
+  }
+  return normalizeOrigin(process.env.FRONTEND_URL);
+}
+
 module.exports = {
   getPublicBackendUrl,
   ensurePublicBackendUrl,
@@ -126,4 +182,6 @@ module.exports = {
   getGithubCallbackUrl,
   clearCache,
   fetchNgrokTunnelUrl,
+  normalizeOrigin,
+  resolveFrontendOrigin,
 };

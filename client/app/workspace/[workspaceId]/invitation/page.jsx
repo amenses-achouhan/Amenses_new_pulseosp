@@ -28,6 +28,9 @@ export default function InvitationLandingPage() {
   const [mustChange, setMustChange] = useState(false);
 
   const workspaceId = params?.workspaceId;
+  // Accounts created from an OTP invitation have no password yet — the current
+  // password field is hidden and the change-password call skips verification.
+  const hasPassword = session?.user?.hasPassword !== false;
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -82,7 +85,7 @@ export default function InvitationLandingPage() {
           'Content-Type': 'application/json',
           ...(bearer ? { Authorization: `Bearer ${bearer.trim()}` } : {}),
         },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify({ ...(hasPassword ? { currentPassword } : {}), newPassword }),
       }, 10000);
       if (!res.ok) {
         setError(data?.message || `Password change failed (${res.status}).`);
@@ -117,34 +120,38 @@ export default function InvitationLandingPage() {
       {/* Header */}
       <div className="text-center space-y-1.5">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          {mustChange ? 'Set your password.' : 'Invitation & Security'}
+          {mustChange || !hasPassword ? 'Set your password.' : 'Invitation & Security'}
         </h1>
         <p className="text-sm text-slate-500 max-w-md mx-auto">
-          {mustChange
-            ? 'Your account was provisioned with a temporary password. Set a new password to continue into the workspace.'
-            : 'Update the security password associated with your account for this workspace.'}
+          {!hasPassword
+            ? 'Your account was created from your invitation. Set a password to continue into the workspace.'
+            : mustChange
+              ? 'Your account was provisioned with a temporary password. Set a new password to continue into the workspace.'
+              : 'Update the security password associated with your account for this workspace.'}
         </p>
       </div>
 
       {/* Card Form */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-2xs">
         <form onSubmit={onSubmit} className="space-y-4.5" noValidate>
-          <div className="relative">
-            <input
-              id="invitation-current-password"
-              type="password"
-              name="currentPassword"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder=" "
-              className={FLOAT_INPUT}
-            />
-            <label htmlFor="invitation-current-password" className={FLOAT_LABEL}>
-              Current Password
-            </label>
-          </div>
+          {hasPassword && (
+            <div className="relative">
+              <input
+                id="invitation-current-password"
+                type="password"
+                name="currentPassword"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder=" "
+                className={FLOAT_INPUT}
+              />
+              <label htmlFor="invitation-current-password" className={FLOAT_LABEL}>
+                Current Password
+              </label>
+            </div>
+          )}
 
           <div className="relative">
             <input

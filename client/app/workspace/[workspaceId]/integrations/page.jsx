@@ -159,7 +159,13 @@ function GitHubPanel({ workspaceId, token }) {
     setConnectError('');
     try {
       const res = await fetchWithTimeout(`${API_BASE}/api/integrations/github/connect`, {
-        headers: { Authorization: `Bearer ${token}`, 'x-organization-id': workspaceId },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-organization-id': workspaceId,
+          // RC-1: tell the backend which frontend origin initiated the connect so
+          // the OAuth callback redirects back HERE (preserving the session cookie).
+          'x-frontend-origin': window.location.origin,
+        },
       });
       const data = await res.json();
       if (data.url) {
@@ -443,7 +449,9 @@ function SlackPanel({ workspaceId, token }) {
     setConnecting(true);
     setConnectError('');
     try {
-      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/slack/authorize`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/slack/authorize`, {
+        headers: { ...headers, 'x-frontend-origin': window.location.origin },
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -699,7 +707,9 @@ function JiraPanel({ workspaceId, token }) {
     setConnecting(true);
     setConnectError('');
     try {
-      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/auth`, { headers });
+      const res = await fetchWithTimeout(`${API_BASE}/api/integrations/jira/auth`, {
+        headers: { ...headers, 'x-frontend-origin': window.location.origin },
+      });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;

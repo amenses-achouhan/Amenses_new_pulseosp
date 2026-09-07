@@ -2,7 +2,6 @@ const crypto = require('crypto');
 const express = require('express');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const { runInTransaction } = require('../utils/dbTransaction');
 const { sendMail, transporter } = require('../utils/mailer');
 
@@ -49,6 +48,12 @@ const slugify = (name) => {
  */
 router.post('/onboard', authenticate, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
     const teamSize = typeof req.body?.teamSize === 'string' ? req.body.teamSize : '';
     const primaryFocus =
@@ -128,6 +133,12 @@ router.post('/onboard', authenticate, async (req, res) => {
  */
 router.post('/switch-org', authenticate, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const targetOrganizationId = req.body?.targetOrganizationId;
     if (
       typeof targetOrganizationId !== 'string' ||
@@ -177,6 +188,14 @@ router.post('/switch-org', authenticate, async (req, res) => {
  */
 async function handleInvite(req, res) {
   try {
+    // Guard: if Mongoose isn't connected, fail with a clear 503 instead of
+    // letting the query throw an unhandled rejection → generic 500.
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     // Accept email from any of: { email, orgEmail, personalEmail } for
     // backward compatibility and simplified client testing (Case 3).
     const recipientEmail = (
@@ -204,24 +223,44 @@ async function handleInvite(req, res) {
       });
     }
 
-    // Auto-generate a temporary password so the invitee can sign in immediately.
-    const tempPassword = crypto.randomBytes(6).toString('hex'); // 12 hex chars
+    // Existing accounts are NEVER touched: overwriting an invitee's password
+    // silently locks them out of their own account. They sign in with their
+    // existing credentials and the invite token attaches the membership.
+    //
+    // Brand-new accounts use OTP-based acceptance: a 6-digit code (only its
+    // SHA-256 hash is stored) is emailed, and the account is created WITHOUT a
+    // password. Proving ownership of the invited email via the code attaches
+    // the membership; the invitee then sets their own password on first login.
+    // No plaintext temporary password is ever sent over email.
+    const existingUser = await User.findOne({ email: recipientEmail });
+    const isNewUser = !existingUser;
+    const inviteOtp = isNewUser ? crypto.randomInt(100000, 1000000).toString() : null;
 
-    let existingUser = await User.findOne({ email: recipientEmail });
     if (existingUser) {
-      existingUser.passwordHash = await bcrypt.hash(tempPassword, 10);
-      existingUser.mustChangePassword = false;
-      existingUser.isVerified = true;
-      await existingUser.save();
+      // An admin vouched for this address, so an unverified account (e.g. a
+      // self-registration that never completed OTP) is treated as verified.
+      // Password and mustChangePassword are left untouched.
+      if (!existingUser.isVerified) {
+        existingUser.isVerified = true;
+        await existingUser.save();
+      }
     } else {
-      await User.create({
-        name: name || recipientEmail.split('@')[0],
-        email: recipientEmail,
-        passwordHash: await bcrypt.hash(tempPassword, 10),
-        isVerified: true,
-        authProvider: 'credentials',
-        mustChangePassword: false,
-      });
+      // Upsert instead of bare create — makes concurrent invites for the same
+      // email idempotent (exactly one document created, no duplicate-key 500).
+      await User.findOneAndUpdate(
+        { email: recipientEmail },
+        {
+          $setOnInsert: {
+            name: name || recipientEmail.split('@')[0],
+            email: recipientEmail,
+            passwordHash: null,
+            isVerified: true,
+            authProvider: 'credentials',
+            mustChangePassword: true,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
     }
 
     const rawToken = crypto.randomBytes(32).toString('hex');
@@ -230,7 +269,17 @@ async function handleInvite(req, res) {
 
     await Invitation.findOneAndUpdate(
       { organizationId: req.organizationId, email: recipientEmail },
-      { $set: { role, tokenHash, expiresAt, status: 'pending' } },
+      {
+        $set: {
+          role,
+          tokenHash,
+          expiresAt,
+          status: 'pending',
+          ...(isNewUser
+            ? { otpHash: sha256(inviteOtp), otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000) }
+            : { otpHash: null, otpExpiresAt: null }),
+        },
+      },
       { upsert: true, new: true }
     );
 
@@ -239,35 +288,63 @@ async function handleInvite(req, res) {
     const frontendUrl = process.env.FRONTEND_URL;
     const inviteUrl = `${frontendUrl}/login?orgEmail=${encodeURIComponent(recipientEmail)}&inviteToken=${rawToken}`;
 
+    // Fire-and-forget email — don't block the HTTP response on SMTP delivery.
+    // This prevents SMTP timeouts (common with Gmail on cloud platforms) from
+    // making the API call hang until the client's fetch timeout aborts.
+    const emailPayload = isNewUser
+      ? {
+          to: recipientEmail,
+          subject: `You are invited to join ${orgName} on PulseOps`,
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:auto">
+              <h2 style="color:#4f46e5">You've been invited to ${orgName}</h2>
+              <p>You have been invited to join <strong>${orgName}</strong> on PulseOps as a <strong>${role}</strong>.</p>
+              <p style="margin:16px 0">Your invitation code is:</p>
+              <div style="background:#f1f5f9;border-radius:8px;padding:12px 20px;font-size:24px;font-family:monospace;letter-spacing:6px;font-weight:bold">${inviteOtp}</div>
+              <p style="margin-top:16px">It expires in 10 minutes. Open the link below and enter this code to accept your invitation and set your own password.</p>
+              <a href="${inviteUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Accept Invitation</a>
+              <p style="margin-top:24px;font-size:12px;color:#6b7280">Or paste this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
+            </div>`,
+          text: `You've been invited to ${orgName} on PulseOps.\n\nEmail: ${recipientEmail}\nInvitation Code: ${inviteOtp} (expires in 10 minutes)\n\nLogin Link: ${inviteUrl}`,
+        }
+      : {
+          to: recipientEmail,
+          subject: `You've been invited to join ${orgName} on PulseOps`,
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:auto">
+              <h2 style="color:#4f46e5">You've been invited to ${orgName}</h2>
+              <p>You have been invited to join <strong>${orgName}</strong> on PulseOps as a <strong>${role}</strong>.</p>
+              <p style="margin-top:16px">Click the button below and sign in with your existing PulseOps password to accept.</p>
+              <a href="${inviteUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Accept Invitation</a>
+              <p style="margin-top:24px;font-size:12px;color:#6b7280">Or paste this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
+            </div>`,
+          text: `You've been invited to ${orgName} on PulseOps.\n\nEmail: ${recipientEmail}\n\nLogin Link: ${inviteUrl}`,
+        };
+
+    let emailSent = false;
     try {
-      await sendMail({
-        to: recipientEmail,
-        subject: `You are invited to join ${orgName} on PulseOps`,
-        html: `
-          <div style="font-family:sans-serif;max-width:480px;margin:auto">
-            <h2 style="color:#4f46e5">You've been invited to ${orgName}</h2>
-            <p>You have been invited to join <strong>${orgName}</strong> on PulseOps as a <strong>${role}</strong>.</p>
-            <p style="margin:16px 0">Your temporary password is:</p>
-            <div style="background:#f1f5f9;border-radius:8px;padding:12px 20px;font-size:20px;font-family:monospace;letter-spacing:2px;font-weight:bold">${tempPassword}</div>
-            <p style="margin-top:16px">Click the button below to sign in and access your workspace immediately.</p>
-            <a href="${inviteUrl}" style="display:inline-block;margin-top:8px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">Accept Invitation</a>
-            <p style="margin-top:24px;font-size:12px;color:#6b7280">Or paste this link: <a href="${inviteUrl}">${inviteUrl}</a></p>
-          </div>`,
-        text: `You've been invited to ${orgName} on PulseOps.\n\nEmail: ${recipientEmail}\nTemporary Password: ${tempPassword}\n\nLogin Link: ${inviteUrl}`,
-      });
+      const mailRes = await Promise.race([
+        sendMail(emailPayload),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Email dispatch timed out')), 5000)
+        ),
+      ]);
+      emailSent = Boolean(mailRes && mailRes.ok);
     } catch (mailErr) {
-      // Email failure must not block the API response in dev.
-      console.error('[invite] Email send failed:', mailErr.message);
+      console.error('[invite] Email dispatch failed:', mailErr.message);
+      emailSent = false;
     }
 
     return res.status(200).json({
       success: true,
       inviteUrl,
-      tempPassword,
+      ...(isNewUser ? { inviteOtp } : {}),
+      existingUser: !isNewUser,
       orgEmail: recipientEmail,
+      emailSent,
     });
   } catch (err) {
-    console.error('[invite] error:', err.message);
+    console.error('[invite] error:', { message: err.message, stack: err.stack, name: err.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -318,6 +395,12 @@ router.get(
   verifyTenantAccess,
   async (req, res) => {
     try {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          message: 'Service temporarily unavailable. Please try again in a moment.',
+        });
+      }
+
       const org = await Organization.findById(req.organizationId);
       if (!org) {
         return res.status(404).json({ message: 'Organization not found.' });
@@ -333,7 +416,7 @@ router.get(
         },
       });
     } catch (err) {
-      console.error('Org settings error:', err.message);
+      console.error('[org-settings] error:', { message: err.message, stack: err.stack, name: err.name });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -349,6 +432,12 @@ router.patch(
   verifyTenantAccess,
   async (req, res) => {
     try {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          message: 'Service temporarily unavailable. Please try again in a moment.',
+        });
+      }
+
       const { primaryColor } = req.body;
       if (!primaryColor || typeof primaryColor !== 'string') {
         return res.status(400).json({ message: 'primaryColor is required.' });
@@ -371,7 +460,7 @@ router.patch(
         themeSettings: org.themeSettings,
       });
     } catch (err) {
-      console.error('Org theme update error:', err.message);
+      console.error('[org-theme] error:', { message: err.message, stack: err.stack, name: err.name });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -389,6 +478,12 @@ router.get(
   requirePermission('view_developers'),
   async (req, res) => {
     try {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          message: 'Service temporarily unavailable. Please try again in a moment.',
+        });
+      }
+
       const [memberDocs, inviteDocs] = await Promise.all([
         OrganizationMember.find({ organizationId: req.organizationId, status: 'active' })
           .populate('userId', 'name email')
@@ -413,7 +508,7 @@ router.get(
 
       return res.status(200).json({ members, invitations: inviteDocs });
     } catch (err) {
-      console.error('[members] error:', err.message);
+      console.error('[members] error:', { message: err.message, stack: err.stack, name: err.name });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -432,6 +527,12 @@ router.patch(
   requirePermission('manage_members'),
   async (req, res) => {
     try {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          message: 'Service temporarily unavailable. Please try again in a moment.',
+        });
+      }
+
       const { memberId } = req.params;
       const { role } = req.body;
 
@@ -462,7 +563,7 @@ router.patch(
 
       return res.status(200).json({ success: true, member: targetMember });
     } catch (err) {
-      console.error('[update-role] error:', err.message);
+      console.error('[update-role] error:', { message: err.message, stack: err.stack, name: err.name });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -481,6 +582,12 @@ router.delete(
   requirePermission('manage_members'),
   async (req, res) => {
     try {
+      if (mongoose.connection.readyState !== 1) {
+        return res.status(503).json({
+          message: 'Service temporarily unavailable. Please try again in a moment.',
+        });
+      }
+
       const { memberId } = req.params;
       const targetMember = await OrganizationMember.findOne({
         _id: memberId,
@@ -502,7 +609,7 @@ router.delete(
       await OrganizationMember.deleteOne({ _id: memberId });
       return res.status(200).json({ success: true });
     } catch (err) {
-      console.error('[remove-member] error:', err.message);
+      console.error('[remove-member] error:', { message: err.message, stack: err.stack, name: err.name });
       return res.status(500).json({ message: 'Internal server error' });
     }
   }

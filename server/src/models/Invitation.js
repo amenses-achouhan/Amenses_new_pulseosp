@@ -8,6 +8,11 @@ const invitationSchema = new Schema({
   tokenHash: { type: String, required: true, unique: true },
   expiresAt: { type: Date, required: true },
   status: { type: String, enum: ['pending', 'accepted', 'expired'], default: 'pending' },
+  // OTP-based acceptance: the invite email carries a 6-digit code (only its
+  // SHA-256 hash is stored) that the invitee enters on the login page to
+  // accept the invitation. Replaces the old plaintext temporary-password email.
+  otpHash: { type: String, default: null },
+  otpExpiresAt: { type: Date, default: null },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Invitation', invitationSchema);

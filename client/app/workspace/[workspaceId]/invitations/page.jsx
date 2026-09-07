@@ -38,6 +38,7 @@ export default function InvitationsPage({ params }) {
   const { workspaceId } = params;
   const { data: session, status } = useSession();
   const userRole = (session?.user?.role || '').toLowerCase();
+  // Must match backend requirePermission('invite_members') — owner, admin, maintainer
   const isAllowedToAccess = ['owner', 'admin', 'maintainer'].includes(userRole);
   const availableRoles = ROLE_OPTIONS[userRole] || ['developer', 'viewer'];
 
@@ -109,7 +110,7 @@ export default function InvitationsPage({ params }) {
 
     setSending(true);
     try {
-      const { data: inviteData, res } = await fetchJSONWithTimeout(`${API_BASE}/api/organizations/invite`, {
+      const { data, res } = await fetchJSONWithTimeout(`${API_BASE}/api/organizations/invite`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -133,8 +134,12 @@ export default function InvitationsPage({ params }) {
         setInviteName('');
         fetchData();
       }
-    } catch {
-      setInviteError('Could not reach the server. Please try again.');
+    } catch (err) {
+      if (err?.name === 'TimeoutError') {
+        setInviteError('Request timed out. Please try again.');
+      } else {
+        setInviteError(err?.message || 'Could not reach the server. Please try again.');
+      }
     } finally {
       setSending(false);
     }
@@ -231,16 +236,33 @@ export default function InvitationsPage({ params }) {
         )}
 
         {inviteResult && (
-          <div className="mt-3 rounded-lg border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-sm text-emerald-900 dark:text-emerald-300 space-y-2">
-            <p className="font-medium">✓ Invitation sent!</p>
-            {inviteResult.tempPassword && (
+          <div
+            className={`mt-3 rounded-lg border px-4 py-3 text-sm space-y-2 ${
+              inviteResult.emailSent === false
+                ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-300'
+                : 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300'
+            }`}
+          >
+            <p className="font-medium">
+              {inviteResult.emailSent === false
+                ? '⚠ Invitation created but email delivery failed.'
+                : '✓ Invitation sent!'}
+            </p>
+            {inviteResult.emailSent === false && (
+              <p className="text-xs">
+                The invite email could not be sent. Share the login link and
+                invitation code below directly with the invitee.
+              </p>
+            )}
+            {inviteResult.inviteOtp && (
               <div>
-                <p className="text-emerald-700 dark:text-emerald-400">Temporary password (share securely):</p>
+                <p className="text-emerald-700 dark:text-emerald-400">Invitation code (share securely):</p>
                 <div className="mt-1 rounded bg-white dark:bg-[#191919] border border-emerald-200 dark:border-emerald-800 px-3 py-2 font-mono text-lg font-bold tracking-widest text-slate-800 dark:text-emerald-300">
-                  {inviteResult.tempPassword}
+                  {inviteResult.inviteOtp}
                 </div>
                 <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-                  The invitee will be required to change this on first login.
+                  The invitee enters this code at the login link to accept and
+                  set their password (expires in 10 minutes).
                 </p>
               </div>
             )}
@@ -255,6 +277,12 @@ export default function InvitationsPage({ params }) {
                 >
                   {inviteResult.inviteUrl}
                 </a>
+              </p>
+            )}
+            {inviteResult.existingUser && (
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                This account already exists — the invitee signs in with their
+                existing password to accept.
               </p>
             )}
           </div>

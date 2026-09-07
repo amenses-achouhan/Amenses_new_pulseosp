@@ -43,9 +43,30 @@ const crypto = require('crypto');
 const jwt = require(path.join(SERVER_DIR, 'node_modules', 'jsonwebtoken'));
 
 const mongoose = require(path.join(SERVER_DIR, 'node_modules', 'mongoose'));
+
+// ---------------------------------------------------------------------------
+// SMTP interception — capture every outgoing mail so we can extract the raw
+// verification + invitation tokens exactly like a real inbox would.
+//
+// IMPORTANT: this stub MUST be installed BEFORE server.js / authRoutes /
+// orgRoutes are required. Those modules destructure `sendMail` from the mailer
+// module at require time, so stubbing later would leave them bound to the real
+// nodemailer transporter (and this machine would attempt a real Gmail send).
+// ---------------------------------------------------------------------------
+const mailerModule = require(path.join(SERVER_DIR, 'src', 'utils', 'mailer'));
+const sentMails = [];
+mailerModule.sendMail = async (mail) => {
+  sentMails.push(mail);
+  // Match the real mailer contract { ok, info, error } so routes don't log
+  // spurious "Email send failed" lines when the capture succeeds.
+  return {
+    ok: true,
+    info: { messageId: `e2e-stub-${sentMails.length}` },
+    error: null,
+  };
+};
+
 const app = require(path.join(SERVER_DIR, 'server.js'));
-const authRoutes = require(path.join(SERVER_DIR, 'src', 'routes', 'authRoutes'));
-const orgRoutes = require(path.join(SERVER_DIR, 'src', 'routes', 'orgRoutes'));
 
 const User = require(path.join(SERVER_DIR, 'src', 'models', 'User'));
 const Organization = require(path.join(SERVER_DIR, 'src', 'models', 'Organization'));
@@ -68,20 +89,6 @@ const DEV_ROLE = 'developer';
 
 const OAUTH_EMAIL = 'oauth.user@gmail.com';
 const OAUTH_NAME = 'OAuth User';
-
-// ---------------------------------------------------------------------------
-// SMTP interception — capture every outgoing mail so we can extract the raw
-// verification + invitation tokens exactly like a real inbox would.
-// ---------------------------------------------------------------------------
-const sentMails = [];
-authRoutes.transporter.sendMail = async (mail) => {
-  sentMails.push(mail);
-  return { messageId: `e2e-stub-${sentMails.length}` };
-};
-orgRoutes.transporter.sendMail = async (mail) => {
-  sentMails.push(mail);
-  return { messageId: `e2e-stub-${sentMails.length}` };
-};
 
 // ---------------------------------------------------------------------------
 // Assertion harness
@@ -127,6 +134,9 @@ const request = async (route, { method = 'GET', body, token } = {}) => {
 // ---------------------------------------------------------------------------
 const FIXTURE_EMAILS = [OWNER_EMAIL, DEV_EMAIL, OAUTH_EMAIL];
 
+const PendingRegistration = require(path.join(SERVER_DIR, 'src', 'models', 'PendingRegistration'));
+const PasswordReset = require(path.join(SERVER_DIR, 'src', 'models', 'PasswordReset'));
+
 const cleanup = async () => {
   const users = await User.find({ email: { $in: FIXTURE_EMAILS } });
   const userIds = users.map((u) => u._id);
@@ -139,6 +149,8 @@ const cleanup = async () => {
   await OrganizationMember.deleteMany({
     $or: [{ userId: { $in: userIds } }, { organizationId: { $in: orgIds } }],
   });
+  await PendingRegistration.deleteMany({ email: { $in: FIXTURE_EMAILS } });
+  await PasswordReset.deleteMany({ email: { $in: FIXTURE_EMAILS } });
   await Organization.deleteMany({ _id: { $in: orgIds } });
   await User.deleteMany({ _id: { $in: userIds } });
 
@@ -154,7 +166,7 @@ const runScenarioA = async () => {
   // A1 — register
   const reg = await request('/api/auth/register', {
     method: 'POST',
-    body: { email: OWNER_EMAIL, password: OWNER_PASSWORD, name: 'Workspace Owner' },
+    body: { email: OWNER_EMAIL, password: OWNER_PASSWORD, name: 'Workspace Owner', username: 'owner' },
   });
   check(
     'A1 register -> 201, hasPendingInvite:false',
@@ -162,20 +174,28 @@ const runScenarioA = async () => {
     `status=${reg.status}`
   );
 
-  // A2 — DB state after register (unverified + token stored)
-  const ownerDoc = await User.findOne({ email: OWNER_EMAIL });
+  // A2 — DB state after register (PendingRegistration created, no real User yet)
+  const PendingRegistration = require(path.join(SERVER_DIR, 'src', 'models', 'PendingRegistration'));
+  const ownerPending = await PendingRegistration.findOne({ email: OWNER_EMAIL });
   check(
-    'A2 DB: isVerified=false, verificationTokenHash present',
-    !!ownerDoc &&
-      ownerDoc.isVerified === false &&
-      !!ownerDoc.verificationTokenHash &&
-      ownerDoc.authProvider === 'credentials'
+    'A2 DB: PendingRegistration created with OTP hash, no real User yet',
+    !!ownerPending &&
+      !!ownerPending.verificationTokenHash &&
+      !!ownerPending.verificationTokenExpires &&
+      ownerPending.passwordHash
   );
+  // Verify no real User exists yet
+  const ownerDoc = await User.findOne({ email: OWNER_EMAIL });
+  check('A2 DB: no real User record yet (created on OTP verify)', !ownerDoc);
 
-  // A3 — verification link click (token captured from the stubbed mail)
-  const verifyMail = findMail('/verify-email?token=');
-  const verifyToken = verifyMail ? extractQueryParam(verifyMail.html, 'token') : null;
-  const verifyRes = await request(`/api/auth/verify-email?token=${verifyToken}`);
+  // A3 — OTP verification (extract 6-digit code from the stubbed mail)
+  const verifyMails = sentMails.filter((m) => m.subject && m.subject.includes('verification code'));
+  const verifyMail = verifyMails[verifyMails.length - 1];
+  const verifyOtp = verifyMail ? (verifyMail.html.match(/(\d{6})/)?.[1] || null) : null;
+  const verifyRes = await request('/api/auth/verify-email', {
+    method: 'POST',
+    body: { email: OWNER_EMAIL, otp: verifyOtp },
+  });
   const ownerAfterVerify = await User.findOne({ email: OWNER_EMAIL });
   check(
     'A3 verify-email -> 200, DB isVerified=true, token cleared',
@@ -231,14 +251,14 @@ const runScenarioA = async () => {
   // A6 — DB: organization + owner membership + user.activeOrganizationId
   const orgDoc = orgId ? await Organization.findById(orgId) : null;
   const ownerMember = orgId
-    ? await OrganizationMember.findOne({ organizationId: orgId, userId: ownerDoc._id })
+    ? await OrganizationMember.findOne({ organizationId: orgId, userId: ownerAfterVerify._id })
     : null;
-  const ownerReloaded = await User.findById(ownerDoc._id);
+  const ownerReloaded = await User.findById(ownerAfterVerify._id);
   check(
     'A6 DB: Organization + owner member(active) + user.activeOrganizationId set',
     !!orgDoc &&
       orgDoc.slug &&
-      String(orgDoc.ownerId) === String(ownerDoc._id) &&
+      String(orgDoc.ownerId) === String(ownerAfterVerify._id) &&
       ownerMember &&
       ownerMember.role === 'owner' &&
       ownerMember.status === 'active' &&
@@ -265,12 +285,13 @@ const runScenarioA = async () => {
   // A8 — /me reflects the workspace (dashboard data contract)
   const me = await request('/api/auth/me', { token: onboard.data.token });
   check(
-    'A8 /me: activeOrganization=Acme Cloud Ops, role=owner, 1 org available',
+    'A8 /me: workspaces includes Acme Cloud Ops, role=owner, 1 workspace',
     me.status === 200 &&
-      me.data.activeOrganization?.name === WORKSPACE_NAME &&
+      me.data.workspaces?.length === 1 &&
+      me.data.workspaces[0].name === WORKSPACE_NAME &&
+      me.data.workspaces[0].role === 'owner' &&
       me.data.role === 'owner' &&
-      me.data.availableOrganizations.length === 1 &&
-      me.data.availableOrganizations[0].role === 'owner',
+      me.data.hasWorkspace === true,
     `status=${me.status}`
   );
 
@@ -283,7 +304,7 @@ const runScenarioA = async () => {
 const runScenarioB = async (ownerToken, orgId) => {
   console.log('\n  Scenario B — Developer invitation & acceptance');
 
-  // B1 — owner invites the developer
+  // B1 — owner invites the developer (new user -> OTP-based acceptance)
   const invite = await request('/api/organizations/invite', {
     method: 'POST',
     token: ownerToken,
@@ -294,95 +315,107 @@ const runScenarioB = async (ownerToken, orgId) => {
     ? extractQueryParam(inviteMail.text, 'inviteToken')
     : null;
   const mailOrgEmail = inviteMail ? extractQueryParam(inviteMail.text, 'orgEmail') : null;
+  const inviteOtp = inviteMail
+    ? (inviteMail.text.match(/Invitation Code: (\d{6})/)?.[1] || null)
+    : null;
   check(
-    'B1 invite -> 200, mail carries orgEmail + inviteToken',
+    'B1 invite -> 200, mail carries orgEmail + inviteToken + 6-digit code',
     invite.status === 200 &&
-      invite.data.message === 'Invitation sent successfully' &&
+      invite.data.success === true &&
+      invite.data.inviteOtp === inviteOtp &&
       !!rawInviteToken &&
-      mailOrgEmail === DEV_EMAIL,
+      mailOrgEmail === DEV_EMAIL &&
+      /^\d{6}$/.test(inviteOtp || ''),
     `status=${invite.status}`
   );
 
-  // B2 — DB: pending invitation with sha256 tokenHash + 7-day expiry
+  // B2 — DB: pending invitation with sha256 tokenHash + 7-day expiry + OTP hash
   const inviteDoc = await Invitation.findOne({ email: DEV_EMAIL, status: 'pending' });
   const expiryDrift = inviteDoc ? inviteDoc.expiresAt.getTime() - Date.now() : 0;
   check(
-    'B2 DB: Invitation pending, role=developer, tokenHash=sha256(raw), ~7d expiry',
+    'B2 DB: Invitation pending, role=developer, tokenHash=sha256(raw), otpHash set, ~7d expiry',
     !!inviteDoc &&
       String(inviteDoc.organizationId) === orgId &&
       inviteDoc.role === DEV_ROLE &&
       inviteDoc.tokenHash === sha256(rawInviteToken) &&
+      inviteDoc.otpHash === sha256(inviteOtp) &&
+      !!inviteDoc.otpExpiresAt &&
       expiryDrift > 6.9 * 24 * 60 * 60 * 1000 &&
       expiryDrift < 7.1 * 24 * 60 * 60 * 1000
   );
 
-  // B3 — invitee self-registers WITHOUT clicking the invite link first ->
-  // TASK-112 pending-invite awareness on the 201.
-  const reg = await request('/api/auth/register', {
-    method: 'POST',
-    body: { email: DEV_EMAIL, password: DEV_PASSWORD, name: DEV_NAME },
-  });
-  check(
-    'B3 self-register -> 201 + hasPendingInvite:true (TASK-112)',
-    reg.status === 201 &&
-      reg.data.hasPendingInvite === true &&
-      reg.data.message ===
-        'Account registered. You have a pending organization invitation waiting.',
-    `status=${reg.status}`
-  );
-
-  // B4 — developer verifies their own email (last "Verify your PulseOps" mail)
-  const verifyMails = sentMails.filter((m) => m.subject && m.subject.includes('Verify your PulseOps'));
-  const verifyMail = verifyMails[verifyMails.length - 1];
-  const devVerifyToken = verifyMail ? extractQueryParam(verifyMail.html, 'token') : null;
-  const devVerify = await request(`/api/auth/verify-email?token=${devVerifyToken}`);
+  // B3 — invite created the User WITHOUT a password (OTP acceptance); first login
+  // must set one (mustChangePassword).
   const devDoc = await User.findOne({ email: DEV_EMAIL });
   check(
-    'B4 developer verify-email -> 200, isVerified=true',
-    devVerify.status === 200 && devDoc.isVerified === true,
-    `status=${devVerify.status}`
+    'B3 DB: invite created User (isVerified=true, credentials, NO passwordHash, mustChangePassword)',
+    !!devDoc &&
+      devDoc.isVerified === true &&
+      devDoc.authProvider === 'credentials' &&
+      !devDoc.passwordHash &&
+      devDoc.mustChangePassword === true,
+    `found=${!!devDoc}`
   );
 
-  // B5 — login WITHOUT invite token: no workspace context yet
+  // B4 — accept via OTP: login with the 6-digit code + invite link token
+  const loginDev = await request('/api/auth/login', {
+    method: 'POST',
+    body: { email: DEV_EMAIL, inviteOtp, inviteToken: rawInviteToken },
+  });
+  const inviteJwt = (() => {
+    try {
+      return decodeJwt(loginDev.data.token);
+    } catch {
+      return null;
+    }
+  })();
+  check(
+    'B4 login with invitation code + inviteToken -> membership applied (org + role=developer)',
+    loginDev.status === 200 &&
+      loginDev.data.user.hasPassword === false &&
+      loginDev.data.user.mustChangePassword === true &&
+      inviteJwt &&
+      inviteJwt.activeOrganizationId === orgId &&
+      inviteJwt.role === DEV_ROLE,
+    `status=${loginDev.status}`
+  );
+
+  // B5 — no password and no code -> cannot sign in
   const loginPlain = await request('/api/auth/login', {
     method: 'POST',
     body: { email: DEV_EMAIL, password: DEV_PASSWORD },
   });
-  const plainJwt = (() => {
-    try {
-      return decodeJwt(loginPlain.data.token);
-    } catch {
-      return null;
-    }
-  })();
   check(
-    'B5 login (no inviteToken) -> JWT activeOrganizationId:null',
-    loginPlain.status === 200 && plainJwt && plainJwt.activeOrganizationId === null,
+    'B5 login without invitation code -> 401 invalid credentials (no password set yet)',
+    loginPlain.status === 401,
     `status=${loginPlain.status}`
   );
 
-  // B6 — click-through of the invite link: login WITH inviteToken
-  const loginInvite = await request('/api/auth/login', {
+  // B6 — set own password (initial set — no currentPassword needed), then sign in
+  const setPw = await request('/api/auth/change-password', {
     method: 'POST',
-    body: { email: DEV_EMAIL, password: DEV_PASSWORD, inviteToken: rawInviteToken },
+    token: loginDev.data.token,
+    body: { newPassword: DEV_PASSWORD },
   });
-  const inviteJwt = (() => {
-    try {
-      return decodeJwt(loginInvite.data.token);
-    } catch {
-      return null;
-    }
-  })();
   check(
-    'B6 login + inviteToken -> membership applied (org + role=developer)',
-    loginInvite.status === 200 &&
-      inviteJwt &&
-      inviteJwt.activeOrganizationId === orgId &&
-      inviteJwt.role === DEV_ROLE,
-    `status=${loginInvite.status}`
+    'B6 change-password (initial set) -> 200, mustChangePassword cleared, hasPassword true',
+    setPw.status === 200 &&
+      setPw.data.user.mustChangePassword === false &&
+      setPw.data.user.hasPassword === true,
+    `status=${setPw.status}`
+  );
+  const loginWithPassword = await request('/api/auth/login', {
+    method: 'POST',
+    body: { email: DEV_EMAIL, password: DEV_PASSWORD },
+  });
+  const devToken = loginWithPassword.data.token || setPw.data.token;
+  check(
+    'B6b login with newly set password -> 200',
+    loginWithPassword.status === 200 && !!loginWithPassword.data.token,
+    `status=${loginWithPassword.status}`
   );
 
-  // B7 — DB: active membership + accepted invitation + user.activeOrganizationId
+  // B7 — DB: active membership + accepted invitation + user org set + passwordHash
   const devMember = await OrganizationMember.findOne({
     organizationId: orgId,
     userId: devDoc._id,
@@ -395,13 +428,14 @@ const runScenarioB = async (ownerToken, orgId) => {
       devMember.role === DEV_ROLE &&
       devMember.status === 'active' &&
       !!acceptedInvite &&
+      !!devReloaded.passwordHash &&
       String(devReloaded.activeOrganizationId) === orgId
   );
 
   // B8 — RBAC guard: a developer cannot invite teammates (owner/admin only).
   const rbac = await request('/api/organizations/invite', {
     method: 'POST',
-    token: loginInvite.data.token,
+    token: devToken,
     body: { email: 'another@acmelabs.io', role: 'developer' },
   });
   check(
@@ -414,7 +448,7 @@ const runScenarioB = async (ownerToken, orgId) => {
   const foreignId = new mongoose.Types.ObjectId();
   const foreign = await request('/api/organizations/switch-org', {
     method: 'POST',
-    token: loginInvite.data.token,
+    token: devToken,
     body: { targetOrganizationId: foreignId.toString() },
   });
   check(
@@ -465,10 +499,10 @@ const runScenarioC = async () => {
   // C3 — /me with no org -> onboarding gate precondition (middleware TASK-110)
   const me = await request('/api/auth/me', { token: sync.data.token });
   check(
-    'C3 /me: activeOrganization=null, 0 orgs -> client gates to /onboarding',
+    'C3 /me: activeOrganizationId=null, 0 workspaces -> client gates to /onboarding',
     me.status === 200 &&
-      me.data.activeOrganization === null &&
-      me.data.availableOrganizations.length === 0,
+      me.data.activeOrganizationId === null &&
+      me.data.workspaces.length === 0,
     `status=${me.status}`
   );
 };
@@ -514,7 +548,7 @@ const runScenarioD = async (ownerToken) => {
   const meAfter = await request('/api/auth/me', { token: switchRes.data.token });
   check(
     'D3 /me now lists both workspaces',
-    meAfter.status === 200 && meAfter.data.availableOrganizations.length === 2,
+    meAfter.status === 200 && meAfter.data.workspaces.length === 2,
     `status=${meAfter.status}`
   );
 };

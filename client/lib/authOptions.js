@@ -13,6 +13,9 @@ export const authOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
         inviteToken: { label: 'Invite token', type: 'text' },
+        // 6-digit code from the invite email — accepts an invitation for
+        // accounts provisioned without a password.
+        inviteOtp: { label: 'Invitation code', type: 'text' },
         // Used by the email-OTP flow: a freshly-minted verification JWT let the
         // just-verified user start an authenticated session without re-entering the
         // password. Not the plaintext password and never exposed in URLs.
@@ -22,7 +25,8 @@ export const authOptions = {
         if (!credentials?.email) return null;
         const hasPassword = !!credentials?.password;
         const hasVerifiedToken = !!credentials?.verifiedToken;
-        if (!hasPassword && !hasVerifiedToken) return null;
+        const hasInviteOtp = !!(credentials?.inviteOtp && credentials?.inviteToken);
+        if (!hasPassword && !hasVerifiedToken && !hasInviteOtp) return null;
 
         let res;
         const loginController = new AbortController();
@@ -39,6 +43,9 @@ export const authOptions = {
                 : {}),
               ...(credentials.inviteToken
                 ? { inviteToken: credentials.inviteToken }
+                : {}),
+              ...(credentials.inviteOtp
+                ? { inviteOtp: credentials.inviteOtp }
                 : {}),
             }),
             signal: loginController.signal,
@@ -86,6 +93,7 @@ export const authOptions = {
           workspaceCount: user.workspaceCount ?? 0,
           workspaces: Array.isArray(user.workspaces) ? user.workspaces : [],
           isInvitedUser: Boolean(user.isInvitedUser),
+          hasPassword: user.hasPassword ?? true,
         };
       },
     }),
@@ -149,6 +157,8 @@ export const authOptions = {
         user.workspaceCount = u.workspaceCount ?? 0;
         user.workspaces = Array.isArray(u.workspaces) ? u.workspaces : [];
         user.isInvitedUser = Boolean(u.isInvitedUser);
+        // OAuth accounts never carry a PulseOps password.
+        user.hasPassword = u.hasPassword ?? false;
       } catch (error) {
         clearTimeout(syncTimeout);
         if (error.name === 'AbortError') {
@@ -177,6 +187,7 @@ export const authOptions = {
         token.workspaceCount = user.workspaceCount ?? userWorkspaces.length;
         token.workspaces = userWorkspaces;
         token.isInvitedUser = user.isInvitedUser || false;
+        token.hasPassword = user.hasPassword ?? true;
       }
       if (trigger === 'update' && session) {
         if (session.accessToken !== undefined) token.accessToken = session.accessToken;
@@ -191,6 +202,7 @@ export const authOptions = {
         if (session.workspaceCount !== undefined) token.workspaceCount = session.workspaceCount;
         if (session.workspaces !== undefined) token.workspaces = session.workspaces;
         if (session.isInvitedUser !== undefined) token.isInvitedUser = session.isInvitedUser;
+        if (session.hasPassword !== undefined) token.hasPassword = session.hasPassword;
       }
       return token;
     },
@@ -211,6 +223,7 @@ export const authOptions = {
         session.user.workspaceCount = token.workspaceCount ?? userWorkspaces.length;
         session.user.workspaces = userWorkspaces;
         session.user.isInvitedUser = token.isInvitedUser || false;
+        session.user.hasPassword = token.hasPassword ?? true;
       }
       return session;
     },

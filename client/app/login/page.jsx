@@ -113,6 +113,7 @@ function LoginInner() {
   const [tab, setTab] = useState('credentials');
   const [email, setEmail] = useState(() => (orgEmail ? orgEmail : ''));
   const [password, setPassword] = useState('');
+  const [inviteOtp, setInviteOtp] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const locked = Boolean(orgEmail);
@@ -175,6 +176,9 @@ function LoginInner() {
     try {
       const payload = { email: email.trim(), password };
       if (inviteToken) payload.inviteToken = inviteToken;
+      // Newly invited accounts have no password — the 6-digit code from the
+      // invite email authenticates the acceptance.
+      if (inviteOtp) payload.inviteOtp = inviteOtp;
 
       const result = await signIn('credentials', {
         redirect: false,
@@ -207,7 +211,13 @@ function LoginInner() {
       if (isInvitedUser || orgEmail) {
         const targetOrg = wsId || searchParams.get('workspaceId');
         if (targetOrg) {
-          window.location.href = `/workspace/${targetOrg}/invitations`;
+          // Invitees land on a page they can actually access: the password-set
+          // landing when a temporary password is in effect, otherwise the
+          // workspace home. (The old destination /invitations is admin-only,
+          // so a developer invitee hit a 403 wall.)
+          window.location.href = user.mustChangePassword
+            ? `/workspace/${targetOrg}/invitation`
+            : `/workspace/${targetOrg}`;
         } else {
           window.location.href = wsId ? `/workspace/${wsId}` : '/onboarding';
         }
@@ -371,6 +381,33 @@ function LoginInner() {
                       Sign in with another email
                     </a>
                   </p>
+                )}
+
+                {locked && inviteToken && (
+                  <>
+                    <div className="relative">
+                      <input
+                        id="login-invite-otp"
+                        type="text"
+                        name="inviteOtp"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        value={inviteOtp}
+                        placeholder=" "
+                        onChange={(e) => setInviteOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className={FLOAT_INPUT}
+                      />
+                      <label htmlFor="login-invite-otp" className={FLOAT_LABEL}>
+                        Invitation Code
+                      </label>
+                    </div>
+                    <p className="mt-1.5 text-xs text-indigo-600">
+                      New to PulseOps? Enter the 6-digit code from your invite
+                      email instead of a password.
+                    </p>
+                  </>
                 )}
 
                 <div className="relative">

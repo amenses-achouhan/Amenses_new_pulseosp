@@ -9,6 +9,11 @@ const integrationSchema = new Schema({
   // consumed in /github/callback. Without this field Mongoose's strict mode
   // silently drops the value, breaking state validation on the callback.
   state: { type: String },
+  // RC-1 — frontend origin the user initiated the connect from. The OAuth
+  // callback redirects here (not a hardcoded FRONTEND_URL) so the NextAuth
+  // session cookie travels with the landing request and the user stays signed
+  // in. Set on each /authorize, consumed by the matching callback.
+  returnTo: { type: String, default: null },
   accessToken: { type: String },
   refreshToken: { type: String },
   // Slack bot (xoxb) token for Web API calls (conversations.history/replies,

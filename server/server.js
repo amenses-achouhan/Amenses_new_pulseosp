@@ -73,7 +73,7 @@ const corsOptions = {
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Organization-Id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Organization-Id', 'X-Frontend-Origin'],
   credentials: true,
   optionsSuccessStatus: 204,
 };
@@ -148,6 +148,23 @@ app.get('/api/health', (req, res) => {
     service: 'pulseops-api',
     timestamp: new Date().toISOString(),
   });
+});
+
+// SMTP health check — diagnostic endpoint for production debugging.
+// Returns the status of the mail transporter without exposing credentials.
+app.get('/api/health/smtp', async (req, res) => {
+  try {
+    const { verifyTransporter } = require('./src/utils/mailer');
+    const result = await verifyTransporter();
+    res.json({
+      ok: result.ok,
+      message: result.message,
+      smtpConfigured: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
 });
 
 // TASK-112: JSON 404 + global error handler (production error masking).

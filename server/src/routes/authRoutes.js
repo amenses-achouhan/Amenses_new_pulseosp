@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const User = require('../models/User');
 const PendingRegistration = require('../models/PendingRegistration');
@@ -9,7 +10,7 @@ const PasswordReset = require('../models/PasswordReset');
 const OrganizationMember = require('../models/OrganizationMember');
 const Invitation = require('../models/Invitation');
 const authenticate = require('../middleware/authenticate');
-const { transporter } = require('../utils/mailer');
+const { sendMail, transporter } = require('../utils/mailer');
 
 const router = express.Router();
 
@@ -37,10 +38,10 @@ const generateOtp = () => crypto.randomInt(100000, 1000000).toString();
 
 /**
  * Sends the email-verification OTP email. Follows the invite-email HTML style
- * from orgRoutes. Email failure is non-fatal for the API response (dev flow).
+ * from orgRoutes. Returns { ok, error } — never throws.
  */
 const sendOtpEmail = async (email, otp) => {
-  await transporter.sendMail({
+  const result = await sendMail({
     to: email,
     subject: 'Your PulseOps verification code',
     html: `
@@ -52,15 +53,15 @@ const sendOtpEmail = async (email, otp) => {
       </div>`,
     text: `Welcome to PulseOps! Your email verification code is: ${otp}. It expires in 10 minutes.`,
   });
+  return { ok: result.ok, error: result.error };
 };
 
 /**
  * Sends the password-reset OTP email, following the same inline-HTML style as
- * the email-verification / invite emails. Email failure is non-fatal for the
- * API response (dev flow).
+ * the email-verification / invite emails. Returns { ok, error } — never throws.
  */
 const sendPasswordResetEmail = async (email, otp) => {
-  await transporter.sendMail({
+  const result = await sendMail({
     to: email,
     subject: 'Your PulseOps password reset code',
     html: `
@@ -72,6 +73,7 @@ const sendPasswordResetEmail = async (email, otp) => {
       </div>`,
     text: `Your PulseOps password reset code is: ${otp}. It expires in 10 minutes.`,
   });
+  return { ok: result.ok, error: result.error };
 };
 
 const resolveRole = async (user) => {
@@ -221,6 +223,12 @@ const applyInvitation = async (user, inviteToken) => {
 // ---------------------------------------------------------------------------
 router.post('/register', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
     const password = typeof req.body.password === 'string' ? req.body.password : '';
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
@@ -280,22 +288,22 @@ router.post('/register', authRateLimiter, async (req, res) => {
       { upsert: true, new: true }
     );
 
-    try {
-      await sendOtpEmail(email, otp);
-    } catch (mailErr) {
-      // Email failure must not block the API response in dev (matches /invite).
-      console.error('[register] Email send failed:', mailErr.message);
-    }
+    // Fire-and-forget: don't block the response on SMTP delivery.
+    sendOtpEmail(email, otp).catch((err) => {
+      console.error('[register] Background email failed:', err.message);
+    });
 
     return res.status(201).json(
       pendingInvite
         ? {
             message: 'Account registered. A verification code was sent — please verify your email.',
             hasPendingInvite: true,
+            emailSent: true,
           }
         : {
             message: 'Registration successful. A verification code was sent — please verify your email.',
             hasPendingInvite: false,
+            emailSent: true,
           }
     );
   } catch (error) {
@@ -303,7 +311,7 @@ router.post('/register', authRateLimiter, async (req, res) => {
     if (error && error.code === 11000) {
       return res.status(409).json({ message: 'Username is already taken.' });
     }
-    console.error('Register error:', error.message);
+    console.error('[register] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -313,6 +321,12 @@ router.post('/register', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.get('/verify-email', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const rawToken = typeof req.query.token === 'string' ? req.query.token.trim() : '';
     if (!rawToken) {
       return res.status(400).json({ message: 'Verification token is required.' });
@@ -335,7 +349,7 @@ router.get('/verify-email', authRateLimiter, async (req, res) => {
 
     return res.status(200).json({ message: 'Email verified successfully.' });
   } catch (error) {
-    console.error('Verify email error:', error.message);
+    console.error('[verify-email] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -349,6 +363,12 @@ router.get('/verify-email', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/verify-email', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
     const otp = typeof req.body.otp === 'string' ? req.body.otp.trim() : '';
 
@@ -426,7 +446,7 @@ router.post('/verify-email', authRateLimiter, async (req, res) => {
           message: field === 'Username' ? 'Username is already taken.' : 'User already exists. Please sign in.',
         });
     }
-    console.error('Verify email error:', error.message);
+    console.error('[verify-email-otp] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -438,6 +458,12 @@ router.post('/verify-email', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/resend-otp', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -454,17 +480,17 @@ router.post('/resend-otp', authRateLimiter, async (req, res) => {
     pending.verificationTokenExpires = new Date(Date.now() + OTP_TTL_MS);
     await pending.save();
 
-    try {
-      await sendOtpEmail(email, otp);
-    } catch (mailErr) {
-      console.error('[resend-otp] Email send failed:', mailErr.message);
-    }
+    // Fire-and-forget: don't block the response on SMTP delivery.
+    sendOtpEmail(email, otp).catch((err) => {
+      console.error('[resend-otp] Background email failed:', err.message);
+    });
 
     return res.status(200).json({
       message: 'A new verification code has been sent to your email.',
+      emailSent: true,
     });
   } catch (error) {
-    console.error('Resend OTP error:', error.message);
+    console.error('[resend-otp] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -483,6 +509,15 @@ router.post('/forgot-password', authRateLimiter, async (req, res) => {
       return res.status(400).json({ message: 'A valid email is required.' });
     }
 
+    // Guard: if Mongoose isn't connected, fail with a clear 503 instead of
+    // letting the query throw an unhandled rejection → generic 500.
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
+    let emailSent = false;
     const user = await User.findOne({ email });
     if (user) {
       const otp = generateOtp();
@@ -500,17 +535,27 @@ router.post('/forgot-password', authRateLimiter, async (req, res) => {
         { upsert: true, new: true }
       );
       try {
-        await sendPasswordResetEmail(email, otp);
+        const mailRes = await Promise.race([
+          sendPasswordResetEmail(email, otp),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email dispatch timed out')), 5000)
+          ),
+        ]);
+        emailSent = Boolean(mailRes && mailRes.ok);
       } catch (mailErr) {
-        console.error('[forgot-password] Email send failed:', mailErr.message);
+        console.error('[forgot-password] Email dispatch failed:', mailErr.message);
+        emailSent = false;
       }
     }
 
+    // Always return 200 to prevent email enumeration — include emailSent
+    // flag so the client can show a more helpful message when email fails.
     return res.status(200).json({
       message: 'If an account exists for this email, a verification code has been sent.',
+      emailSent,
     });
   } catch (error) {
-    console.error('Forgot password error:', error.message);
+    console.error('[forgot-password] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -523,6 +568,12 @@ router.post('/forgot-password', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/verify-password-reset-otp', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
     const otp = typeof req.body.otp === 'string' ? req.body.otp.trim() : '';
 
@@ -555,7 +606,7 @@ router.post('/verify-password-reset-otp', authRateLimiter, async (req, res) => {
       resetToken,
     });
   } catch (error) {
-    console.error('Verify password reset OTP error:', error.message);
+    console.error('[verify-password-reset-otp] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -568,6 +619,12 @@ router.post('/verify-password-reset-otp', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/reset-password', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
     const resetToken =
       typeof req.body.resetToken === 'string' ? req.body.resetToken.trim() : '';
@@ -615,7 +672,7 @@ router.post('/reset-password', authRateLimiter, async (req, res) => {
       message: 'Password changed successfully. You can now sign in.',
     });
   } catch (error) {
-    console.error('Reset password error:', error.message);
+    console.error('[reset-password] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -628,6 +685,12 @@ router.post('/reset-password', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/resend-password-otp', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -642,13 +705,26 @@ router.post('/resend-password-otp', authRateLimiter, async (req, res) => {
       record.resetTokenHash = null;
       record.resetTokenExpires = null;
       await record.save();
+
+      let emailSent = false;
       try {
-        await sendPasswordResetEmail(email, otp);
+        const mailRes = await Promise.race([
+          sendPasswordResetEmail(email, otp),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email dispatch timed out')), 5000)
+          ),
+        ]);
+        emailSent = Boolean(mailRes && mailRes.ok);
       } catch (mailErr) {
-        console.error('[resend-password-otp] Email send failed:', mailErr.message);
+        console.error('[resend-password-otp] Email dispatch failed:', mailErr.message);
+        emailSent = false;
       }
+
       return res.status(200).json({
-        message: 'A new verification code has been sent to your email.',
+        message: emailSent
+          ? 'A new verification code has been sent to your email.'
+          : 'Verification code generated, but email delivery failed. Please try again.',
+        emailSent,
       });
     }
 
@@ -657,7 +733,7 @@ router.post('/resend-password-otp', authRateLimiter, async (req, res) => {
       message: 'If an account exists for this email, a verification code has been sent.',
     });
   } catch (error) {
-    console.error('Resend password OTP error:', error.message);
+    console.error('[resend-password-otp] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -667,10 +743,27 @@ router.post('/resend-password-otp', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/login', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
     const password = typeof req.body.password === 'string' ? req.body.password : '';
     const verifiedToken =
       typeof req.body.verifiedToken === 'string' ? req.body.verifiedToken.trim() : '';
+    const inviteToken =
+      typeof req.body.inviteToken === 'string' ? req.body.inviteToken.trim() : undefined;
+    const inviteOtp =
+      typeof req.body.inviteOtp === 'string' ? req.body.inviteOtp.trim() : '';
+
+    // An OTP only makes sense with its invitation link.
+    if (inviteOtp && !inviteToken) {
+      return res
+        .status(400)
+        .json({ message: 'Open the invite link from your email to accept the invitation.' });
+    }
 
     let user = null;
 
@@ -687,6 +780,41 @@ router.post('/login', authRateLimiter, async (req, res) => {
       }
       if (!user) {
         return res.status(401).json({ message: 'Invalid credentials' });
+      }
+    } else if (inviteOtp && inviteToken) {
+      // OTP-based invitation acceptance. Newly invited accounts are created
+      // WITHOUT a password (see orgRoutes handleInvite), so the 6-digit code
+      // from the invite email is the proof of email ownership that authenticates
+      // this one acceptance. The invitation is matched by its (hashed) token,
+      // the OTP by its SHA-256 hash — the plaintext code is never stored.
+      const tokenHash = sha256(inviteToken);
+      const invitation = await Invitation.findOne({
+        tokenHash,
+        status: 'pending',
+        expiresAt: { $gt: new Date() },
+      });
+      if (!invitation) {
+        return res.status(404).json({ message: 'Invitation token invalid or expired' });
+      }
+      if (
+        invitation.email.toLowerCase() !== email.toLowerCase() ||
+        !invitation.otpHash ||
+        !invitation.otpExpiresAt ||
+        invitation.otpExpiresAt <= new Date() ||
+        sha256(inviteOtp) !== invitation.otpHash
+      ) {
+        return res.status(400).json({ message: 'Invalid or expired invitation code.' });
+      }
+
+      // Consume the OTP now; the invitation stays pending until membership is
+      // attached below by applyInvitation.
+      invitation.otpHash = null;
+      invitation.otpExpiresAt = null;
+      await invitation.save();
+
+      user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({ message: 'Invitation token invalid or expired' });
       }
     } else {
       if (!email || !password) {
@@ -714,8 +842,6 @@ router.post('/login', authRateLimiter, async (req, res) => {
 
     // Invitation interceptor: attach workspace membership if inviteToken present.
     // TASK-112: inviteToken is type-checked + trimmed before hashing/DB lookups.
-    const inviteToken =
-      typeof req.body.inviteToken === 'string' ? req.body.inviteToken.trim() : undefined;
     const inviteResult = await applyInvitation(user, inviteToken);
     if (!inviteResult.ok) {
       return res
@@ -740,6 +866,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
           : null,
         role,
         mustChangePassword: user.mustChangePassword === true,
+        hasPassword: !!user.passwordHash,
         hasWorkspace: wpPayload.hasWorkspace,
         workspaceCount: wpPayload.workspaceCount,
         workspaces: wpPayload.workspaces,
@@ -747,7 +874,7 @@ router.post('/login', authRateLimiter, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error.message);
+    console.error('[login] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -757,6 +884,12 @@ router.post('/login', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/oauth/sync', authRateLimiter, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const email = String(req.body.email || '').toLowerCase().trim();
     const name = typeof req.body.name === 'string' ? req.body.name : '';
 
@@ -812,6 +945,7 @@ router.post('/oauth/sync', authRateLimiter, async (req, res) => {
           : null,
         role,
         mustChangePassword: user.mustChangePassword === true,
+        hasPassword: !!user.passwordHash,
         hasWorkspace: wpPayload.hasWorkspace,
         workspaceCount: wpPayload.workspaceCount,
         workspaces: wpPayload.workspaces,
@@ -819,7 +953,7 @@ router.post('/oauth/sync', authRateLimiter, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('OAuth sync error:', error.message);
+    console.error('[oauth-sync] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -832,30 +966,43 @@ router.post('/oauth/sync', authRateLimiter, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/change-password', authRateLimiter, authenticate, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-    if (!user.passwordHash) {
+    if (!user.passwordHash && user.authProvider && user.authProvider !== 'credentials') {
       return res.status(400).json({ 
         error: 'OAuth accounts (Google/GitHub) do not use passwords. Log in with your OAuth provider.' 
       });
     }
+    const hasPassword = !!user.passwordHash;
 
     const currentPassword =
       typeof req.body.currentPassword === 'string' ? req.body.currentPassword : '';
     const newPassword = typeof req.body.newPassword === 'string' ? req.body.newPassword : '';
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: 'Current and new password are required.' });
+    if (!newPassword) {
+      return res.status(400).json({ message: 'New password is required.' });
     }
     if (newPassword.length < 8) {
       return res.status(400).json({ message: 'New password must be at least 8 characters.' });
     }
-
-    const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Current password does not match' });
+    // Accounts provisioned without a password (OTP invite acceptance) set their
+    // first password here — no currentPassword is required.
+    if (hasPassword && !currentPassword) {
+      return res.status(400).json({ message: 'Current password is required.' });
+    }
+    if (hasPassword) {
+      const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Current password does not match' });
+      }
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, 10);
@@ -877,10 +1024,11 @@ router.post('/change-password', authRateLimiter, authenticate, async (req, res) 
           : null,
         role,
         mustChangePassword: false,
+        hasPassword: true,
       },
     });
   } catch (error) {
-    console.error('Change password error:', error.message);
+    console.error('[change-password] error:', { message: error.message, stack: error.stack, name: error.name });
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -890,6 +1038,12 @@ router.post('/change-password', authRateLimiter, authenticate, async (req, res) 
 // ---------------------------------------------------------------------------
 router.get('/me', authenticate, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again in a moment.',
+      });
+    }
+
     const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -911,7 +1065,7 @@ router.get('/me', authenticate, async (req, res) => {
       role,
     });
   } catch (error) {
-    console.error('Get me error:', error.message);
+    console.error('[get-me] error:', { message: error.message, stack: error.stack, name: error.name });
     res.status(500).json({ message: 'Internal server error' });
   }
 });

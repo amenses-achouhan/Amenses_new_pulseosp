@@ -17,7 +17,7 @@ const {
   postMessage,
 } = require('../services/slackClient');
 const JiraService = require('../services/jira.service');
-const { getSlackCallbackUrl, getJiraCallbackUrl, getGithubCallbackUrl } = require('../utils/publicUrl');
+const { getSlackCallbackUrl, getJiraCallbackUrl, getGithubCallbackUrl, resolveFrontendOrigin, normalizeOrigin } = require('../utils/publicUrl');
 
 const router = express.Router();
 
@@ -36,11 +36,16 @@ router.get(
       return res.status(503).json({ error: 'GitHub OAuth is not configured on this server.' });
     }
     const state = crypto.randomBytes(20).toString('hex');
+    // RC-1: remember which frontend origin started this connect so the callback
+    // can return the user to the SAME origin (their session lives there).
+    const $set = { state, status: 'pending' };
+    const returnTo = resolveFrontendOrigin(req);
+    if (returnTo) $set.returnTo = returnTo;
     await Integration.findOneAndUpdate(
       { organizationId: req.organizationId, provider: 'github' },
       {
         $setOnInsert: { organizationId: req.organizationId, provider: 'github' },
-        $set: { state, status: 'pending' },
+        $set,
       },
       { upsert: true, new: true }
     );
@@ -96,9 +101,11 @@ router.get('/github/callback', async (req, res) => {
   integration.state = undefined; // consumed
   await integration.save();
 
-  const frontendUrl = process.env.FRONTEND_URL;
+  // RC-1: land the user back on the origin they initiated from so the NextAuth
+  // session cookie is sent with the request (no forced sign-in bounce).
+  const returnTo = integration.returnTo || normalizeOrigin(process.env.FRONTEND_URL) || '';
   res.redirect(
-    `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=github`
+    `${returnTo}/workspace/${integration.organizationId}/integrations?connected=github`
   );
 });
 
@@ -457,11 +464,16 @@ router.get(
       return res.status(503).json({ error: 'Slack OAuth is not configured on this server.' });
     }
     const state = crypto.randomBytes(20).toString('hex');
+    // RC-1: remember which frontend origin started this connect so the callback
+    // can return the user to the SAME origin (their session lives there).
+    const $set = { state, status: 'pending' };
+    const returnTo = resolveFrontendOrigin(req);
+    if (returnTo) $set.returnTo = returnTo;
     await Integration.findOneAndUpdate(
       { organizationId: req.organizationId, provider: 'slack' },
       {
         $setOnInsert: { organizationId: req.organizationId, provider: 'slack' },
-        $set: { state, status: 'pending' },
+        $set,
       },
       { upsert: true, new: true }
     );
@@ -551,9 +563,11 @@ router.get('/slack/callback', async (req, res) => {
   integration.state = undefined; // consumed — prevents replay of this callback
   await integration.save();
 
-  const frontendUrl = process.env.FRONTEND_URL;
+  // RC-1: land the user back on the origin they initiated from so the NextAuth
+  // session cookie is sent with the request (no forced sign-in bounce).
+  const returnTo = integration.returnTo || normalizeOrigin(process.env.FRONTEND_URL) || '';
   res.redirect(
-    `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=slack`
+    `${returnTo}/workspace/${integration.organizationId}/integrations?connected=slack`
   );
 });
 
@@ -701,11 +715,16 @@ router.get(
       return res.status(503).json({ error: 'Jira OAuth is not configured on this server.' });
     }
     const state = crypto.randomBytes(20).toString('hex');
+    // RC-1: remember which frontend origin started this connect so the callback
+    // can return the user to the SAME origin (their session lives there).
+    const $set = { state, status: 'pending' };
+    const returnTo = resolveFrontendOrigin(req);
+    if (returnTo) $set.returnTo = returnTo;
     await Integration.findOneAndUpdate(
       { organizationId: req.organizationId, provider: 'jira' },
       {
         $setOnInsert: { organizationId: req.organizationId, provider: 'jira' },
-        $set: { state, status: 'pending' },
+        $set,
       },
       { upsert: true, new: true }
     );
@@ -845,9 +864,11 @@ router.get('/jira/callback', async (req, res) => {
 
     console.log('[jira/callback] Integration saved for org:', integration.organizationId, 'cloudId:', cloudId);
 
-  const frontendUrl = process.env.FRONTEND_URL;
+  // RC-1: land the user back on the origin they initiated from so the NextAuth
+  // session cookie is sent with the request (no forced sign-in bounce).
+  const returnTo = integration.returnTo || normalizeOrigin(process.env.FRONTEND_URL) || '';
   res.redirect(
-    `${frontendUrl}/workspace/${integration.organizationId}/integrations?connected=jira`
+    `${returnTo}/workspace/${integration.organizationId}/integrations?connected=jira`
     );
   } catch (err) {
     console.error('[jira/callback] error:', err);
