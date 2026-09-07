@@ -117,7 +117,7 @@ export function Avatar({ url, name, size = 'h-8 w-8', textClass = 'text-[11px]' 
 export function Badge({ children, className = '' }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full bg-slate-100 dark:bg-[#2A2A2A] px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-[#9B9B9B] ${className}`}
     >
       {children}
     </span>
@@ -127,7 +127,7 @@ export function Badge({ children, className = '' }) {
 export function Card({ children, className = '' }) {
   return (
     <section
-      className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}
+      className={`rounded-2xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] shadow-sm ${className}`}
     >
       {children}
     </section>
@@ -137,8 +137,8 @@ export function Card({ children, className = '' }) {
 export function SectionTitle({ icon: Icon, children, aside }) {
   return (
     <div className="flex items-center justify-between px-5 pt-5">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-        {Icon && <Icon className="h-4 w-4 text-slate-400" />}
+      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-[#E9E9E7]">
+        {Icon && <Icon className="h-4 w-4 text-slate-400 dark:text-[#6F6F6F]" />}
         {children}
       </h3>
       {aside}
@@ -148,10 +148,10 @@ export function SectionTitle({ icon: Icon, children, aside }) {
 
 export function EmptyState({ icon: Icon, title, hint }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-4 py-8 text-center">
-      {Icon && <Icon className="mx-auto h-5 w-5 text-slate-300" />}
-      <p className="mt-2 text-sm font-medium text-slate-500">{title}</p>
-      {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+    <div className="rounded-xl border border-dashed border-slate-200 dark:border-[#2F2F2F] bg-slate-50/40 dark:bg-[#202020]/40 px-4 py-8 text-center">
+      {Icon && <Icon className="mx-auto h-5 w-5 text-slate-300 dark:text-slate-600" />}
+      <p className="mt-2 text-sm font-medium text-slate-500 dark:text-[#9B9B9B]">{title}</p>
+      {hint && <p className="mt-1 text-xs text-slate-400 dark:text-[#6F6F6F]">{hint}</p>}
     </div>
   );
 }

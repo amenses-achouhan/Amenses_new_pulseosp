@@ -134,7 +134,7 @@ function Avatar({ name, url }) {
 // Slack uploaded-file card + inline preview
 // ---------------------------------------------------------------------------
 
-const FILE_STYLE = 'flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600';
+const FILE_STYLE = 'flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 dark:border-[#2F2F2F] bg-slate-50 dark:bg-[#1A2A38] px-3 py-2 text-xs text-slate-600 dark:text-[#9B9B9B]';
 const DOWNLOAD_STYLE = 'ml-auto shrink-0 text-indigo-600 hover:underline';
 
 const IMAGE_RE = /image\//i;
@@ -334,7 +334,7 @@ function SlackFileAttachment({ file, token, workspaceId }) {
               className="h-72 w-full rounded-md border border-slate-200"
             />
           ) : type === 'text' && previewText ? (
-            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-slate-200 bg-white p-3 font-mono text-xs leading-relaxed text-slate-700">
+            <pre className="max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-3 font-mono text-xs leading-relaxed text-slate-700 dark:text-[#E9E9E7]">
               {previewText.slice(0, 20000)}
               {previewText.length > 20000 ? '\n… (truncated)' : ''}
             </pre>
@@ -358,18 +358,18 @@ function SlackFileAttachment({ file, token, workspaceId }) {
 function MessageRow({ message, onOpenThread, token, workspaceId }) {
   const hasThread = Number(message.replyCount) > 0;
   return (
-    <div className="group flex gap-3.5 px-5 py-4 transition-colors hover:bg-slate-50/80">
+    <div className="group flex gap-3.5 px-5 py-4 transition-colors hover:bg-slate-50/80 dark:hover:bg-[#2A2A2A]/60">
       <Avatar name={message.userName} url={message.userAvatar} />
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-          <span className="text-sm font-semibold text-slate-900">{message.userName}</span>
-          <span className="text-xs text-slate-400">
+          <span className="text-sm font-semibold text-slate-900 dark:text-[#E9E9E7]">{message.userName}</span>
+          <span className="text-xs text-slate-400 dark:text-[#6F6F6F]">
             {formatDay(message.ts)} · {formatClock(message.ts)}
           </span>
         </div>
 
-        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">
+        <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700 dark:text-[#9B9B9B]">
           {renderText(message.text)}
         </p>
 
@@ -378,7 +378,7 @@ function MessageRow({ message, onOpenThread, token, workspaceId }) {
             {message.attachments?.map((att, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600"
+                className="flex items-center gap-2 rounded-lg border border-slate-200 dark:border-[#2F2F2F] bg-slate-50 dark:bg-[#202020] px-3 py-2 text-xs text-slate-600 dark:text-[#9B9B9B]"
               >
                 <SlackIcon />
                 <span className="truncate">{att.title || att.text || 'Attachment'}</span>
@@ -387,7 +387,7 @@ function MessageRow({ message, onOpenThread, token, workspaceId }) {
                     href={att.title_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ml-auto shrink-0 text-indigo-600 hover:underline"
+                    className="ml-auto shrink-0 text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
                     Open
                   </a>
@@ -411,18 +411,18 @@ function MessageRow({ message, onOpenThread, token, workspaceId }) {
             {message.reactions?.map((r, i) => (
               <span
                 key={`${r.name}-${i}`}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600"
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] px-2 py-0.5 text-[11px] text-slate-600 dark:text-[#9B9B9B]"
                 title={`${r.users?.length || 0} reaction(s)`}
               >
                 <span aria-hidden="true">:{r.name}:</span>
-                <span className="font-medium text-slate-700">{r.count}</span>
+                <span className="font-medium text-slate-700 dark:text-[#E9E9E7]">{r.count}</span>
               </span>
             ))}
             {hasThread && (
               <button
                 type="button"
                 onClick={() => onOpenThread(message)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-indigo-600 transition-colors hover:border-indigo-200 hover:bg-indigo-50"
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] px-2.5 py-1 text-[11px] font-medium text-indigo-600 dark:text-indigo-400 transition-colors hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
               >
                 <MessageSquare className="h-3 w-3" />
                 {message.replyCount} {message.replyCount === 1 ? 'reply' : 'replies'}
@@ -449,12 +449,12 @@ function ThreadDrawer({ channelName, thread, messages, loading, error, onClose, 
       onClick={onClose}
     >
       <div
-        className="flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
+        className="flex h-full w-full max-w-md flex-col bg-white dark:bg-[#202020] shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#2F2F2F] px-5 py-4">
           <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-900">Thread</h3>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-[#E9E9E7]">Thread</h3>
             <p className="truncate text-xs text-slate-500">
               {thread.userName} · {channelName && `${channelName} · `}
               {formatDay(thread.ts)} {formatClock(thread.ts)}
@@ -593,7 +593,7 @@ export default function CommunicationPage({ params }) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Communication</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E9E9E7]">Communication</h1>
           <p className="mt-1 text-sm text-slate-500">
             Stay updated with conversations from your connected tools.
           </p>
@@ -625,7 +625,7 @@ export default function CommunicationPage({ params }) {
             type="button"
             onClick={refresh}
             disabled={refreshing}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-300 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] px-4 py-2 text-sm font-medium text-slate-700 dark:text-[#E9E9E7] transition-colors hover:bg-slate-50 dark:hover:bg-[#2A2A2A] disabled:opacity-60"
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing…' : 'Refresh'}
@@ -635,16 +635,16 @@ export default function CommunicationPage({ params }) {
 
       {/* Body */}
       {loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-center gap-3 px-6 py-20 text-sm text-slate-500">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
+        <div className="rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] shadow-sm">
+          <div className="flex items-center justify-center gap-3 px-6 py-20 text-sm text-slate-500 dark:text-[#9B9B9B]">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-300 dark:text-slate-600" />
             Loading conversations…
           </div>
         </div>
       ) : loadError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-10 text-center">
-          <h2 className="text-base font-semibold text-rose-800">Unable to load messages</h2>
-          <p className="mt-1 text-sm text-rose-700">We couldn&apos;t retrieve messages from Slack.</p>
+        <div className="rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/30 p-10 text-center">
+          <h2 className="text-base font-semibold text-rose-800 dark:text-rose-300">Unable to load messages</h2>
+          <p className="mt-1 text-sm text-rose-700 dark:text-rose-400">We couldn&apos;t retrieve messages from Slack.</p>
           <button
             type="button"
             onClick={refresh}
@@ -654,69 +654,69 @@ export default function CommunicationPage({ params }) {
           </button>
         </div>
       ) : !data ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 shadow-sm">
+        <div className="rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-10 text-center text-sm text-slate-500 dark:text-[#9B9B9B] shadow-sm">
           Loading…
         </div>
       ) : !connected ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+        <div className="rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-10 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-[#2A2A2A]">
             <SlackIcon className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-base font-semibold text-slate-900">Slack isn&apos;t connected</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="mt-4 text-base font-semibold text-slate-900 dark:text-[#E9E9E7]">Slack isn&apos;t connected</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-[#9B9B9B]">
             Connect Slack to view communication from your team.
           </p>
           <Link
             href={`/workspace/${workspaceId}/integrations`}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 dark:bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 dark:hover:bg-indigo-500"
           >
             Connect Slack
           </Link>
         </div>
       ) : data.channelUnavailable ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
+        <div className="rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-10 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-[#2A2A2A]">
             <SlackIcon className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-base font-semibold text-slate-900">Channel unavailable</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="mt-4 text-base font-semibold text-slate-900 dark:text-[#E9E9E7]">Channel unavailable</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-[#9B9B9B]">
             The connected Slack channel could not be accessed.
           </p>
           <Link
             href={`/workspace/${workspaceId}/integrations`}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 dark:bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700 dark:hover:bg-indigo-500"
           >
             Reconnect Slack
           </Link>
         </div>
       ) : messages.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100">
-            <MessagesSquare className="h-6 w-6 text-slate-500" />
+        <div className="rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] px-6 py-16 text-center shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-[#2A2A2A]">
+            <MessagesSquare className="h-6 w-6 text-slate-500 dark:text-[#6F6F6F]" />
           </div>
-          <h2 className="mt-4 text-base font-semibold text-slate-900">No messages yet</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="mt-4 text-base font-semibold text-slate-900 dark:text-[#E9E9E7]">No messages yet</h2>
+          <p className="mt-1 text-sm text-slate-500 dark:text-[#9B9B9B]">
             Messages from this connected channel will appear here.
           </p>
         </div>
       ) : (
 
 
-        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs">
-          <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-5 py-3.5">
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] shadow-2xs">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#2F2F2F] bg-slate-50/50 dark:bg-[#2A2A2A]/40 px-5 py-3.5">
             <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-rose-50 text-rose-600">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400">
                 <SlackIcon className="h-3.5 w-3.5" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-[#9B9B9B]">
                 {data.teamName || 'Slack'} {channelLabel ? `· ${channelLabel}` : ''}
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-slate-400">
+            <span className="text-[11px] font-semibold text-slate-400 dark:text-[#6F6F6F]">
               {messages.length} {messages.length === 1 ? 'message' : 'messages'}
             </span>
           </div>
-          <div className="divide-y divide-slate-100/80">
+          <div className="divide-y divide-slate-100/80 dark:divide-[#2F2F2F]">
             {messages.map((m, idx) => {
               const currentDay = formatDay(m.ts);
               const prevDay = idx > 0 ? formatDay(messages[idx - 1].ts) : null;
@@ -727,9 +727,9 @@ export default function CommunicationPage({ params }) {
                   {showDateDivider && (
                     <div className="relative my-2 flex items-center justify-center px-4">
                       <div className="absolute inset-0 flex items-center px-4" aria-hidden="true">
-                        <div className="w-full border-t border-slate-200/70" />
+                        <div className="w-full border-t border-slate-200/70 dark:border-[#2F2F2F]" />
                       </div>
-                      <div className="relative rounded-full border border-slate-200/80 bg-slate-50 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 shadow-2xs">
+                      <div className="relative rounded-full border border-slate-200/80 dark:border-[#2F2F2F] bg-slate-50 dark:bg-[#2A2A2A] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#9B9B9B] shadow-2xs">
                         {currentDay}
                       </div>
                     </div>

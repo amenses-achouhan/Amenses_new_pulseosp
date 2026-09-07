@@ -8,9 +8,9 @@ import { Loader2, Search, Users, Activity } from 'lucide-react';
 import { fetchDevelopers } from '../../../_components/analyticsApi';
 
 const statusBadge = {
-  Healthy: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
-  'At Risk': 'bg-amber-50 text-amber-700 ring-amber-600/20',
-  Critical: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+  Healthy: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 ring-emerald-600/20 dark:ring-emerald-500/30',
+  'At Risk': 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 ring-amber-600/20 dark:ring-amber-500/30',
+  Critical: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 ring-rose-600/20 dark:ring-rose-500/30',
 };
 
 export default function DevelopersPage() {
@@ -105,40 +105,40 @@ export default function DevelopersPage() {
                   <th className="px-6 py-4">Last Active</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#2F2F2F] bg-white dark:bg-[#202020]">
                 {filtered.map((d) => (
-                  <tr key={d.actor} className="transition hover:bg-slate-50/60">
+                  <tr key={d.actor} className="transition hover:bg-slate-50/60 dark:hover:bg-[#2A2A2A]/60">
                     <td className="px-6 py-4.5">
                       <div className="flex items-center gap-3">
                         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-xs font-bold uppercase text-white shadow-sm">
                           {String(d.actor).charAt(0)}
                         </span>
-                        <span className="font-semibold capitalize text-slate-900">{d.actor}</span>
+                        <span className="font-semibold capitalize text-slate-900 dark:text-[#E9E9E7]">{d.actor}</span>
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${statusBadge[d.status] || 'bg-slate-100 text-slate-600'}`}>
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${statusBadge[d.status] || 'bg-slate-100 dark:bg-[#2A2A2A] text-slate-600 dark:text-[#9B9B9B]'}`}>
                         {d.status || 'Active'}
                       </span>
                     </td>
-                    <td className="px-5 py-4 font-semibold text-slate-800">{d.total}</td>
-                    <td className="px-5 py-4 text-emerald-600 font-semibold">{d.prsMerged}</td>
-                    <td className="px-5 py-4 text-indigo-600 font-semibold">{d.prsOpened}</td>
-                    <td className="px-5 py-4 text-purple-600 font-semibold">{d.issuesCompleted}</td>
-                    <td className="px-5 py-4 text-xs text-slate-500">
+                    <td className="px-5 py-4 font-semibold text-slate-800 dark:text-[#E9E9E7]">{d.total}</td>
+                    <td className="px-5 py-4 text-emerald-600 dark:text-emerald-400 font-semibold">{d.prsMerged}</td>
+                    <td className="px-5 py-4 text-indigo-600 dark:text-indigo-400 font-semibold">{d.prsOpened}</td>
+                    <td className="px-5 py-4 text-purple-600 dark:text-purple-400 font-semibold">{d.issuesCompleted}</td>
+                    <td className="px-5 py-4 text-xs text-slate-500 dark:text-[#9B9B9B]">
                       {d.lastActive ? new Date(d.lastActive).toLocaleDateString() : '—'}
                       {d.daysIdle === 0 ? (
-                        <span className="ml-1 text-emerald-600 font-semibold">· today</span>
+                        <span className="ml-1 text-emerald-600 dark:text-emerald-400 font-semibold">· today</span>
                       ) : d.daysIdle ? (
-                        <span className="ml-1 text-slate-400">· {d.daysIdle}d ago</span>
+                        <span className="ml-1 text-slate-400 dark:text-[#6F6F6F]">· {d.daysIdle}d ago</span>
                       ) : null}
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400 mb-2">
+                    <td colSpan={7} className="px-6 py-12 text-center text-slate-400 dark:text-[#6F6F6F]">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-[#2A2A2A] text-slate-400 dark:text-[#6F6F6F] mb-2">
                         <Users className="h-5 w-5" />
                       </div>
                       No active developer activity found.

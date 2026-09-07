@@ -34,17 +34,17 @@ function WorkspaceCard({ workspace, onSelect, loading }) {
       type="button"
       onClick={() => onSelect(workspace)}
       disabled={loading}
-      className="group relative flex w-full flex-col gap-3.5 rounded-xl border border-slate-200/80 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-400/80 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-60"
+      className="group relative flex w-full flex-col gap-3.5 rounded-xl border border-slate-200/80 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-400/80 dark:hover:border-indigo-500 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-60"
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold text-white shadow-sm group-hover:scale-105 transition-transform">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 dark:bg-indigo-600 text-sm font-bold text-white shadow-sm group-hover:scale-105 transition-transform">
             {initials || '?'}
           </div>
           <div>
-            <p className="text-sm font-bold text-slate-900 leading-tight">{workspace.name}</p>
+            <p className="text-sm font-bold text-slate-900 dark:text-[#E9E9E7] leading-tight">{workspace.name}</p>
             {workspace.slug && (
-              <p className="text-xs text-slate-400 mt-0.5">/{workspace.slug}</p>
+              <p className="text-xs text-slate-400 dark:text-[#6F6F6F] mt-0.5">/{workspace.slug}</p>
             )}
           </div>
         </div>
@@ -58,8 +58,8 @@ function WorkspaceCard({ workspace, onSelect, loading }) {
       </div>
 
       <div className="flex items-center justify-between pt-1">
-        <span className="text-xs text-slate-500">Click to enter workspace</span>
-        <span className="text-xs font-mono text-slate-400 group-hover:translate-x-0.5 transition-transform">→</span>
+        <span className="text-xs text-slate-500 dark:text-[#9B9B9B]">Click to enter workspace</span>
+        <span className="text-xs font-mono text-slate-400 dark:text-[#6F6F6F] group-hover:translate-x-0.5 transition-transform">→</span>
       </div>
     </button>
   );
@@ -67,7 +67,7 @@ function WorkspaceCard({ workspace, onSelect, loading }) {
 
 function CardSkeleton() {
   return (
-    <div className="flex w-full flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm animate-pulse">
+    <div className="flex w-full flex-col gap-4 rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-5 shadow-sm animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-slate-200" />

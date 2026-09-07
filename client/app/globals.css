@@ -34,12 +34,12 @@
   --gray-900: #0F172A;   /* text-primary — slate-900 */
   --white:    #FFFFFF;
 
-  /* Dark-mode neutral scale (Notion-inspired cohesive dark palette) */
-  --dark-950: #191919;   /* page background, dark */
+  /* Dark-mode neutral scale — Notion / PulseOps cohesive palette */
+  --dark-950: #18191B;   /* page background, dark */
   --dark-900: #202020;   /* surface / card, dark */
   --dark-800: #2A2A2A;   /* surface-hover / elevated surface, dark */
   --dark-700: #2F2F2F;   /* border, dark */
-  --dark-600: #383838;   /* subtle separator, dark */
+  --dark-600: #374046;   /* subtle separator, dark */
   --dark-400: #9B9B9B;   /* text-secondary, dark */
   --dark-300: #6F6F6F;   /* text-muted, dark */
   --dark-100: #E9E9E7;   /* text-primary, dark */
@@ -86,7 +86,7 @@
 /* Dark theme — applied by next-themes adding class="dark" on <html> */
 .dark,
 [data-theme="dark"] {
-  --bg:               #191919;
+  --bg:               #18191B;
   --surface:          #202020;
   --surface-hover:    #2A2A2A;
   --surface-elevated: #202020;

@@ -28,20 +28,20 @@ export default function AnalyticsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8 p-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Workspace Analytics</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E9E9E7]">Workspace Analytics</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-[#9B9B9B]">
           Organization health metrics, KPIs, trends, and risk alerts across integrated platforms.
         </p>
       </div>
 
-      {/* Main KPI Dashboard: Health score, KPI trend cards, Team health, Risks & Alerts */}
+      {/* Main KPI Dashboard */}
       <AnalyticsCards organizationId={organizationId} />
 
       {/* Breakdown by source */}
       {!isLoading && !isError && (
-        <div className="space-y-6 pt-4 border-t border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">Integration Event Distribution</h2>
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="space-y-6 pt-4 border-t border-slate-200 dark:border-[#2F2F2F]">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-[#E9E9E7]">Integration Event Distribution</h2>
+          <div className="space-y-3 rounded-2xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-5 shadow-sm">
             {[
               ['GitHub', (totals.prsMerged || 0) + (totals.prsOpened || 0) + (totals.prsClosed || 0) + (totals.pushes || 0)],
               ['Slack', totals.slackMessages || 0],
@@ -55,11 +55,11 @@ export default function AnalyticsPage() {
               );
               return (
                 <div key={label}>
-                  <div className="flex justify-between text-xs font-medium text-slate-600">
+                  <div className="flex justify-between text-xs font-medium text-slate-600 dark:text-[#9B9B9B]">
                     <span>{label}</span>
                     <span>{n} events</span>
                   </div>
-                  <div className="mt-1.5 h-2.5 w-full rounded-full bg-slate-100">
+                  <div className="mt-1.5 h-2.5 w-full rounded-full bg-slate-100 dark:bg-[#2A2A2A]">
                     <div
                       className="h-2.5 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-600 transition-all duration-500"
                       style={{ width: `${Math.round((n / max) * 100)}%` }}
@@ -79,9 +79,9 @@ export default function AnalyticsPage() {
               ['Jira Created', totals.jiraCreated],
               ['Jira Completed', totals.jiraCompleted],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</dt>
-                <dd className="mt-1 text-2xl font-bold text-slate-900">{value ?? 0}</dd>
+              <div key={label} className="rounded-2xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-4 shadow-sm">
+                <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-[#6F6F6F]">{label}</dt>
+                <dd className="mt-1 text-2xl font-bold text-slate-900 dark:text-[#E9E9E7]">{value ?? 0}</dd>
               </div>
             ))}
           </dl>
@@ -89,4 +89,4 @@ export default function AnalyticsPage() {
       )}
     </div>
   );
-}
+}

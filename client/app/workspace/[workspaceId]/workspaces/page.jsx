@@ -128,8 +128,8 @@ export default function WorkspacesPage({ params }) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Workspaces</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-[#E9E9E7]">Workspaces</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-[#9B9B9B]">
             Manage the workspaces you belong to and switch between them.
           </p>
         </div>
@@ -163,7 +163,7 @@ export default function WorkspacesPage({ params }) {
       {/* ─── Workspaces List ─────────────────────────────────────────────── */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#6F6F6F]">
             Your Workspaces ({sortedOrganizations.length})
           </h2>
         </div>
@@ -176,40 +176,40 @@ export default function WorkspacesPage({ params }) {
             return (
               <div
                 key={orgId}
-                className={`flex w-full items-center justify-between gap-4 rounded-2xl border bg-white p-5 text-left transition-all ${
+                className={`flex w-full items-center justify-between gap-4 rounded-2xl border bg-white dark:bg-[#202020] p-5 text-left transition-all ${
                   isActive
-                    ? 'border-indigo-300 ring-2 ring-indigo-100/80 shadow-xs'
-                    : 'border-slate-200/80 hover:border-indigo-200 hover:shadow-xs'
+                    ? 'border-indigo-300 dark:border-indigo-700 ring-2 ring-indigo-100/80 dark:ring-indigo-900/40 shadow-xs'
+                    : 'border-slate-200/80 dark:border-[#2F2F2F] hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-xs'
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-4">
                   <div
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white shadow-2xs ${
                       isActive
-                        ? 'bg-slate-900'
-                        : 'bg-slate-200 text-slate-700'
+                        ? 'bg-slate-900 dark:bg-indigo-600'
+                        : 'bg-slate-200 dark:bg-[#2A2A2A] text-slate-700 dark:text-[#9B9B9B]'
                     }`}
                   >
                     {(org.name || '?').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-bold text-slate-900">{org.name}</p>
+                      <p className="truncate text-sm font-bold text-slate-900 dark:text-[#E9E9E7]">{org.name}</p>
                       {isActive && (
-                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-600/20 dark:ring-emerald-500/30">
                           <Check className="h-3 w-3" aria-hidden="true" /> Active
                         </span>
                       )}
                     </div>
-                    <p className="text-xs capitalize text-slate-500 mt-0.5">
-                      Role: <span className="font-semibold text-slate-700">{org.role || 'member'}</span>
+                    <p className="text-xs capitalize text-slate-500 dark:text-[#9B9B9B] mt-0.5">
+                      Role: <span className="font-semibold text-slate-700 dark:text-[#E9E9E7]">{org.role || 'member'}</span>
                     </p>
                   </div>
                 </div>
 
                 <div className="shrink-0">
                   {isActive ? (
-                    <span className="text-xs font-semibold text-slate-400 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                    <span className="text-xs font-semibold text-slate-400 dark:text-[#6F6F6F] px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-[#2A2A2A] border border-slate-200/60 dark:border-[#2F2F2F]">
                       Currently Active
                     </span>
                   ) : (
@@ -217,7 +217,7 @@ export default function WorkspacesPage({ params }) {
                       type="button"
                       disabled={switching === orgId}
                       onClick={() => switchWorkspace(orgId, org.role)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-all shadow-2xs disabled:opacity-60"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] hover:bg-slate-50 dark:hover:bg-[#2A2A2A] px-3.5 py-1.5 text-xs font-semibold text-slate-700 dark:text-[#E9E9E7] transition-all shadow-2xs disabled:opacity-60"
                     >
                       {switching === orgId ? (
                         <>
@@ -238,8 +238,8 @@ export default function WorkspacesPage({ params }) {
           })}
 
           {sortedOrganizations.length === 0 && !meError && (
-            <div className="rounded-2xl border border-slate-200/80 bg-white px-6 py-12 text-center shadow-2xs">
-              <p className="text-sm text-slate-500">No workspaces found.</p>
+            <div className="rounded-2xl border border-slate-200/80 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] px-6 py-12 text-center shadow-2xs">
+              <p className="text-sm text-slate-500 dark:text-[#9B9B9B]">No workspaces found.</p>
               <button
                 type="button"
                 onClick={() => setShowCreateModal(true)}
