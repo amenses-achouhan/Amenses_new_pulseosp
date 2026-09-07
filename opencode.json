@@ -1,0 +1,30 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "provider": {
+        "apinex": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "APInex Free",
+            "options": {
+                "baseURL": "https://api.apinex.bond/v1"
+            },
+            "models": {
+                "gpt-5.6-luna": {
+                    "name": "GPT 5.6 Luna FREE",
+                    "modelID": "free/gpt-5.6-luna"
+                },
+                "gemini-3.1-pro": {
+                    "name": "Gemini 3.1 Pro FREE",
+                    "modelID": "free/gemini-3.1-pro"
+                },
+                "qwen-3.8-max": {
+                    "name": "Qwen 3.8 MAX FREE",
+                    "modelID": "free/qwen-3.8-max"
+                },
+                "glm-5.3-flash": {
+                    "name": "GLM 5.3 Flash FREE",
+                    "modelID": "free/glm-5.3-flash"
+                }
+            }
+        }
+    }
+}

@@ -54,9 +54,11 @@ router.get('/latest', authenticate, verifyTenantAccess, requirePermission('view_
       .exec();
 
     if (!latest) {
-      return res.status(404).json({
+      // Always return 200 with data:null — the client handles the empty state gracefully.
+      // Returning 404 here floods the browser console with red errors on every page load.
+      return res.status(200).json({
         message: 'No AI summary found for this organization',
-        data: null
+        data: null,
       });
     }
 
@@ -191,17 +193,57 @@ router.post('/', authenticate, verifyTenantAccess, requirePermission('generate_r
     }
 
     // Fetch activities in the period.
-    const activities = await getActivityForRange({
+    let activities = await getActivityForRange({
       organizationId,
       startDate: start,
       endDate: end
     });
 
-    // Check if we have enough data.
+    // If no activities in the default 7-day window, look back up to 30 days.
+    if (activities.length === 0 && !startDate) {
+      const widerStart = new Date();
+      widerStart.setDate(widerStart.getDate() - 30);
+      activities = await getActivityForRange({ organizationId, startDate: widerStart, endDate: end }) || [];
+    }
+
+    // Still nothing — widen to 90 days as a last resort.
+    if (activities.length === 0 && !startDate) {
+      const widestStart = new Date();
+      widestStart.setDate(widestStart.getDate() - 90);
+      activities = await getActivityForRange({ organizationId, startDate: widestStart, endDate: end }) || [];
+    }
+
+    // If the workspace has absolutely no activity data yet, return a graceful
+    // placeholder summary instead of a hard 400 — this prevents console floods.
     if (activities.length === 0) {
-      return res.status(400).json({
-        error: 'Not enough activity to summarize',
-        message: 'No activities found for the specified period'
+      const placeholder = await AISummary.create({
+        organizationId,
+        type: summaryType,
+        startDate: start,
+        endDate: end,
+        summary:
+          'No engineering activity has been recorded for this workspace yet. ' +
+          'Connect your GitHub, Jira, or Slack integrations to start generating real AI health summaries.',
+        key_metrics: {
+          prsMerged: 0,
+          prsOpened: 0,
+          activeDevelopers: 0,
+          jiraIssuesCompleted: 0,
+          jiraIssuesCreated: 0,
+          slackMessages: 0,
+        },
+        top_contributors: [],
+        risks: ['No activity data found — ensure your integrations are connected and webhooks are active.'],
+        recommendations: [
+          'Connect GitHub to track pull requests and commits.',
+          'Connect Jira to track issue progress and sprint velocity.',
+          'Connect Slack to track team communication activity.',
+        ],
+        generatedAt: new Date(),
+      });
+      return res.status(201).json({
+        message: 'Placeholder summary created — no activity data found yet.',
+        data: placeholder,
       });
     }
 

@@ -186,10 +186,10 @@ export default function AISummaryPanel({ organizationId }) {
 
       {/* EMPTY STATE */}
       {!summary && !isLoading && !error && (
-        <div className="empty-state text-center p-8 bg-slate-50 rounded-2xl border border-slate-200">
+        <div className="empty-state text-center p-8 bg-slate-50 dark:bg-[#202020] rounded-2xl border border-slate-200 dark:border-[#2F2F2F]">
           <div className="empty-icon text-3xl mb-2">📋</div>
-          <h3 className="text-base font-bold text-slate-900">No Summary Generated Yet</h3>
-          <p className="text-sm text-slate-500 mt-1">Click the &quot;Generate Summary&quot; button to create your first report.</p>
+          <h3 className="text-base font-bold text-slate-900 dark:text-[#E9E9E7]">No Summary Generated Yet</h3>
+          <p className="text-sm text-slate-500 dark:text-[#9B9B9B] mt-1">Click the &quot;Generate Summary&quot; button to create your first report.</p>
         </div>
       )}
 
@@ -197,30 +197,30 @@ export default function AISummaryPanel({ organizationId }) {
       {summary && (
         <div className="summary-content space-y-6">
           {/* Meta Info + Identical Health Score Banner */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-[#202020] border border-slate-200 dark:border-[#2F2F2F]">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium text-slate-600">📅 {formatDate(summary.generatedAt)}</span>
-              <span className="badge bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-bold">Weekly Report</span>
-              <span className="badge secondary bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full text-xs font-medium">AI Generated</span>
+              <span className="text-xs font-medium text-slate-600 dark:text-[#9B9B9B]">📅 {formatDate(summary.generatedAt)}</span>
+              <span className="badge bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 px-2.5 py-1 rounded-full text-xs font-bold">Weekly Report</span>
+              <span className="badge secondary bg-slate-200 dark:bg-[#2A2A2A] text-slate-700 dark:text-[#9B9B9B] px-2.5 py-1 rounded-full text-xs font-medium">AI Generated</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium uppercase tracking-wide text-slate-500">Org Health Score:</span>
+              <span className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-[#7A7A7A]">Org Health Score:</span>
               <span className={`text-xl font-extrabold ${scoreColor}`}>{healthScore}/100</span>
-              <span className="text-xs font-bold text-slate-700 uppercase">({healthLabel})</span>
+              <span className="text-xs font-bold text-slate-700 dark:text-[#E9E9E7] uppercase">({healthLabel})</span>
             </div>
           </div>
 
           {/* Executive Summary Prose */}
-          <div className="summary-section summary-text p-5 rounded-2xl bg-indigo-50/50 border border-indigo-100">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-indigo-900 mb-2 flex items-center gap-2">
-              <Activity className="h-4 w-4 text-indigo-600" /> Executive Summary
+          <div className="summary-section summary-text p-5 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Executive Summary
             </h3>
-            <p className="text-sm leading-relaxed text-slate-800 font-normal">{summary.summary}</p>
+            <p className="text-sm leading-relaxed text-slate-800 dark:text-[#D1D1D0] font-normal">{summary.summary}</p>
           </div>
 
           {/* Key Metrics Stat Cards with Bar Visuals */}
           <div className="summary-section key-metrics">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700 mb-3">📊 Key Metrics Visual</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wide text-slate-700 dark:text-[#9B9B9B] mb-3">📊 Key Metrics Visual</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
                 ['PRs Merged', metric('prsMerged', 'prs_merged'), 'bg-indigo-600'],
@@ -228,14 +228,14 @@ export default function AISummaryPanel({ organizationId }) {
                 ['Active Developers', metric('activeDevelopers', 'active_developers'), 'bg-blue-600'],
                 ['Jira Issues Done', metric('jiraIssuesCompleted', 'jira_issues_completed'), 'bg-emerald-600'],
                 ['Jira Issues Created', metric('jiraIssuesCreated', 'jira_issues_created'), 'bg-amber-600'],
-                ['Slack Messages', metric('slackMessages', 'slack_messages'), 'bg-slate-700'],
+                ['Slack Messages', metric('slackMessages', 'slack_messages'), 'bg-slate-700 dark:bg-slate-400'],
               ].map(([label, val, barBg]) => (
-                <div key={label} className="metric-card rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-2">
-                  <div className="flex justify-between items-center text-xs font-medium text-slate-500 uppercase tracking-wide">
+                <div key={label} className="metric-card rounded-2xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] p-4 shadow-2xs space-y-2">
+                  <div className="flex justify-between items-center text-xs font-medium text-slate-500 dark:text-[#9B9B9B] uppercase tracking-wide">
                     <span>{label}</span>
-                    <span className="font-bold text-slate-900 text-base">{val}</span>
+                    <span className="font-bold text-slate-900 dark:text-[#E9E9E7] text-base">{val}</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-[#2A2A2A] overflow-hidden">
                     <div
                       className={`h-full rounded-full ${barBg} transition-all duration-500`}
                       style={{ width: `${Math.min(100, Math.max(15, (Number(val) || 0) * 10))}%` }}
@@ -249,18 +249,18 @@ export default function AISummaryPanel({ organizationId }) {
           {/* Severity-Colored Risks & Blockers */}
           {risksArr.length > 0 && (
             <div className="summary-section risks space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-rose-900 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-600" /> Risks &amp; Severity Alerts
+              <h3 className="text-sm font-bold uppercase tracking-wide text-rose-900 dark:text-rose-400 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-rose-600 dark:text-rose-400" /> Risks &amp; Severity Alerts
               </h3>
               <div className="space-y-2.5">
                 {risksArr.map((risk, idx) => {
-                  const isCritical = risk.toLowerCase().includes('backlog') || risk.toLowerCase().includes('inactive');
-                  const isWarning = risk.toLowerCase().includes('inflow') || risk.toLowerCase().includes('outpacing');
+                  const isCritical = risk.toLowerCase().includes('backlog') || risk.toLowerCase().includes('inactive') || risk.toLowerCase().includes('failure') || risk.toLowerCase().includes('leak');
+                  const isWarning = risk.toLowerCase().includes('inflow') || risk.toLowerCase().includes('outpacing') || risk.toLowerCase().includes('risk');
                   const cardStyle = isCritical
-                    ? 'border-l-4 border-rose-500 bg-rose-50/80 text-rose-900'
+                    ? 'border-l-4 border-rose-500 bg-rose-50/80 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200'
                     : isWarning
-                    ? 'border-l-4 border-amber-500 bg-amber-50/80 text-amber-900'
-                    : 'border-l-4 border-emerald-500 bg-emerald-50/80 text-emerald-900';
+                    ? 'border-l-4 border-amber-500 bg-amber-50/80 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200'
+                    : 'border-l-4 border-emerald-500 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200';
 
                   return (
                     <div key={idx} className={`rounded-xl p-3.5 text-sm font-medium shadow-2xs ${cardStyle}`}>
@@ -276,30 +276,30 @@ export default function AISummaryPanel({ organizationId }) {
           {/* Top Contributors Table */}
           {resolvedContributors.length > 0 && (
             <div className="summary-section contributors space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 flex items-center gap-2">
-                <User className="h-4 w-4 text-indigo-600" /> Top Contributors
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-800 dark:text-[#E9E9E7] flex items-center gap-2">
+                <User className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> Top Contributors
               </h3>
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-[#2F2F2F] bg-white dark:bg-[#202020] shadow-2xs">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                    <tr className="border-b border-slate-100 dark:border-[#2F2F2F] bg-slate-50 dark:bg-[#252525] text-slate-500 dark:text-[#8B899C] text-xs font-semibold uppercase tracking-wider">
                       <th className="px-4 py-3">Contributor</th>
                       <th className="px-4 py-3">Email</th>
                       <th className="px-4 py-3">Role</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-[#2F2F2F]">
                     {resolvedContributors.map((c, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3 font-semibold text-slate-900 flex items-center gap-2.5">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs">
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-[#252525]/60 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-[#E9E9E7] flex items-center gap-2.5">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
                             {c.name.charAt(0).toUpperCase()}
                           </span>
                           {c.name}
                         </td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-xs">{c.email || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 dark:text-[#9B9B9B] font-mono text-xs">{c.email || '—'}</td>
                         <td className="px-4 py-3">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700 capitalize">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-[#2A2A2A] px-2.5 py-0.5 text-xs font-medium text-slate-700 dark:text-[#E9E9E7] capitalize">
                             {c.role}
                           </span>
                         </td>
@@ -314,12 +314,12 @@ export default function AISummaryPanel({ organizationId }) {
           {/* Recommendations */}
           {recs.length > 0 && (
             <div className="summary-section recommendations space-y-3">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-emerald-900 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Actionable Recommendations
+              <h3 className="text-sm font-bold uppercase tracking-wide text-emerald-900 dark:text-emerald-400 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /> Actionable Recommendations
               </h3>
               <div className="space-y-2">
                 {recs.map((rec, idx) => (
-                  <div key={idx} className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 text-sm text-emerald-900 font-medium">
+                  <div key={idx} className="rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/20 p-3.5 text-sm text-emerald-900 dark:text-emerald-300 font-medium">
                     ✅ {rec}
                   </div>
                 ))}
@@ -328,11 +328,11 @@ export default function AISummaryPanel({ organizationId }) {
           )}
 
           {/* Footer */}
-          <div className="summary-footer flex items-center justify-between pt-4 border-t border-slate-100">
-            <button onClick={() => refetch()} className="refresh-button flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">
+          <div className="summary-footer flex items-center justify-between pt-4 border-t border-slate-100 dark:border-[#2F2F2F]">
+            <button onClick={() => refetch()} className="refresh-button flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 cursor-pointer">
               <RefreshCw className="h-3.5 w-3.5" /> Refresh Data
             </button>
-            <span className="summary-id text-xs text-slate-400 font-mono">
+            <span className="summary-id text-xs text-slate-400 dark:text-[#6F6F6F] font-mono">
               Report ID: {summary._id ? summary._id.toString().slice(0, 8) : '—'}
             </span>
           </div>

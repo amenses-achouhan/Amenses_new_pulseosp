@@ -53,7 +53,7 @@ async function fetchLatestSummary(organizationId, token) {
   try {
     const headers = buildHeaders(token, organizationId);
     const res = await fetchWithTimeout(
-      `${LATEST_ENDPOINT}?organizationId=${encodeURIComponent(organizationId)}`,
+      `${LATEST_ENDPOINT}?organizationId=${encodeURIComponent(organizationId)}&allowNull=true`,
       { headers }
     );
     if (res.status === 404) return null;
